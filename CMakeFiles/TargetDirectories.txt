@@ -1,3 +1,0 @@
-/home/vanari/Documents/pgr/semestral-project/CMakeFiles/run.dir
-/home/vanari/Documents/pgr/semestral-project/CMakeFiles/edit_cache.dir
-/home/vanari/Documents/pgr/semestral-project/CMakeFiles/rebuild_cache.dir

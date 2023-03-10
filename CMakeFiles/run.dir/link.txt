@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/run.dir/main.cpp.o CMakeFiles/run.dir/home/vanari/Documents/pgr/share/glad/src/glad.c.o -o run  -lglfw 
