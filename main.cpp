@@ -23,6 +23,14 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "   fragColor = vertexColor;\n"
     "}\0";
 
+const char *fragmentShader2Source = "#version 330 core\n"
+    "out vec4 fragColor;\n"
+	"in vec4 vertexColor;\n"
+    "void main()\n"
+    "{\n"
+    "   fragColor = vec4(0.0, 0.0, 0.5, 1.0);\n"
+    "}\0";
+
 
 int main() {
 	
@@ -63,31 +71,60 @@ int main() {
 	-0.5f, -0.5f, 0.0f  // bottom left
 	};
 
+	GLfloat triangle2[] = {
+	-0.5f,  0.5f, 0.0f,  // top left 
+	 0.5f,  0.5f, 0.0f,  // top right
+	-0.5f, -0.5f, 0.0f  // bottom left
+	};
+
 	GLuint indices[] = {  // note that we start from 0!
     0, 1, 3,   // first triangle
     1, 2, 3    // second triangle
 	};  
 
-	GLuint EBO;
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	// GLuint EBO;
+	// glGenBuffers(1, &EBO);
+	// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	// glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	GLuint VAO;
 	glGenVertexArrays(1, &VAO);
 
 	glBindVertexArray(VAO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
 	GLuint VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	// vao + vbo 2
+	GLuint VAO2;
+	glGenVertexArrays(1, &VAO2);
+
+	glBindVertexArray(VAO2);
+
+	GLuint VBO2;
+	glGenBuffers(1, &VBO2);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO2);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triangle2), triangle2, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	// vertex shader
 	GLuint vertexShader;
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
-	// vertex shader
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 	glCompileShader(vertexShader);
 
@@ -114,6 +151,8 @@ int main() {
     	std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
 	}
 
+
+	// shader program
 	GLuint shaderProgram;
 	shaderProgram = glCreateProgram();
 
@@ -127,13 +166,43 @@ int main() {
     std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
 	}
 
+	glDeleteShader(fragmentShader);
+
+	// fragment shader 2
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+	glShaderSource(fragmentShader, 1, &fragmentShader2Source, NULL);
+	glCompileShader(fragmentShader);
+
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+	if(!success)
+	{
+    	glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+    	std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+
+	// shader program 2
+	GLuint shaderProgram2;
+	shaderProgram2 = glCreateProgram();
+
+	glAttachShader(shaderProgram2, vertexShader);
+	glAttachShader(shaderProgram2, fragmentShader);
+	glLinkProgram(shaderProgram2);
+
+	glGetProgramiv(shaderProgram2, GL_LINK_STATUS, &success);
+	if(!success) {
+    glGetProgramInfoLog(shaderProgram2, 512, NULL, infoLog);
+    std::cout << "ERROR::SHADER::PROGRAM2::LINKING_FAILED\n" << infoLog << std::endl;
+	}
+
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
 	glUseProgram(shaderProgram);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
 
 
@@ -149,10 +218,17 @@ int main() {
 		glUseProgram(shaderProgram);
 		
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 		
+		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		
+		glBindVertexArray(0);
+
+		glUseProgram(shaderProgram2);
+
+		glBindVertexArray(VAO2);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glBindVertexArray(0);
 		
 		// checks, calls and swapping
