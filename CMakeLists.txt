@@ -9,7 +9,9 @@ set(GLAD_SRC ${GLAD}/src/glad.c)
 
 include_directories(${GLAD}/include)
 
-add_executable(${EXE} ${SOURCES} ${GLAD_SRC})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(${EXE} ${SOURCES} ${GLAD_SRC} shader.cpp)
 
 target_link_libraries(${EXE}
 	glfw
