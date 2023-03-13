@@ -11,7 +11,7 @@ include_directories(${GLAD}/include)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(${EXE} ${SOURCES} ${GLAD_SRC} shader.cpp)
+add_executable(${EXE} ${SOURCES} ${GLAD_SRC} shader.cpp stb_image.cpp)
 
 target_link_libraries(${EXE}
 	glfw

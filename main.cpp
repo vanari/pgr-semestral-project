@@ -2,7 +2,8 @@
 #include <math.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <shader.h>
+#include "shader.h"
+#include "stb_image.h"
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
@@ -65,12 +66,12 @@ int main() {
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	GLfloat vertices[] = {
-     0.5f,  0.5f, 0.0f,  // top right
-     0.5f, -0.5f, 0.0f,  // bottom right
-    -0.5f, -0.5f, 0.0f,  // bottom left
-    -0.5f,  0.5f, 0.0f,  // top left 
-	 0.5f,  0.5f, 0.0f,  // top right
-	-0.5f, -0.5f, 0.0f  // bottom left
+     0.5f,  0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	1.0f, 1.0f,	// top right
+     0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	1.0f, 0.0f,	// bottom right
+    -0.5f, -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	0.0f, 0.0f,	// bottom left
+    -0.5f,  0.5f, 0.0f,		1.0f, 1.0f, 0.0f,	0.0f, 1.0f	// top left 
+	//  0.5f,  0.5f, 0.0f,  // top right
+	// -0.5f, -0.5f, 0.0f  // bottom left
 	};
 
 	GLfloat triangle2[] = {
@@ -85,8 +86,15 @@ int main() {
 	-0.5f, -0.5f, 0.0f, 	0.0f, 0.0f, 1.0f	// bottom left
 	};
 
+	GLfloat texCoords[] = {
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+		0.5f, 1.0f
+	};
+
 	GLuint indices[] = {  // note that we start from 0!
-    0, 1, 2   // triangle
+    0, 1, 2,   // triangle
+	0, 2, 3
 	};  
 
 	GLuint EBO;
@@ -102,13 +110,16 @@ int main() {
 	GLuint VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), triangle, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -168,6 +179,29 @@ int main() {
 
 	//GLint vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
 
+	// TEXTURES
+	int width, height, nrChannels;
+	unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+
+	GLuint texture;
+	glGenTextures(1, &texture);
+
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	// parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	} else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
+
+	stbi_image_free(data);
 
 	// render loop
 	while(!glfwWindowShouldClose(window)) {
@@ -183,16 +217,20 @@ int main() {
 
 		// update color
 		//GLfloat timeValue = glfwGetTime();
-		//float greenValue = sin(2*timeValue) / 2.0f + 0.5f;
+		//float offValue = sin(2*timeValue) / 2.0f;
+		//ourShader.setFloat("vOffset", offValue);
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 		//ourShader.setFloat
+
+		glBindTexture(GL_TEXTURE_2D, texture);
 
 		glBindVertexArray(VAO);
 
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		
 		glBindVertexArray(0);
 		
