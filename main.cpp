@@ -180,17 +180,22 @@ int main() {
 	//GLint vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
 
 	// TEXTURES
-	int width, height, nrChannels;
+	
+	
+	stbi_set_flip_vertically_on_load(true);
+
+	GLint width, height, nrChannels;
 	unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
 
-	GLuint texture;
-	glGenTextures(1, &texture);
+	GLuint texture1;
+	glGenTextures(1, &texture1);
 
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+
 
 	// parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -202,6 +207,34 @@ int main() {
 	}
 
 	stbi_image_free(data);
+
+	// TEXTURE 2
+	
+	GLuint texture2;
+	glGenTextures(1, &texture2);
+
+	glBindTexture(GL_TEXTURE_2D, texture2);
+
+	// parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	data = stbi_load("awesomeface.png", &width, &height, &nrChannels, 0);
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	} else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
+
+
+	stbi_image_free(data);
+
+	ourShader.use();
+	ourShader.setInt("texture1", 0);
+	ourShader.setInt("texture2", 1);
 
 	// render loop
 	while(!glfwWindowShouldClose(window)) {
@@ -216,13 +249,12 @@ int main() {
 		ourShader.use();
 
 		// update color
-		//GLfloat timeValue = glfwGetTime();
-		//float offValue = sin(2*timeValue) / 2.0f;
-		//ourShader.setFloat("vOffset", offValue);
+		GLfloat timeValue = glfwGetTime();
+		float mixValue = 0.5 + sin(2*timeValue) / 2.0f;
+		ourShader.setFloat("mixVal", mixValue*0.5);
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 		//ourShader.setFloat
 
-		glBindTexture(GL_TEXTURE_2D, texture);
 
 		glBindVertexArray(VAO);
 
@@ -230,6 +262,10 @@ int main() {
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		
 		glBindVertexArray(0);
