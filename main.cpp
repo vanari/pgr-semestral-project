@@ -5,6 +5,10 @@
 #include "shader.h"
 #include "stb_image.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 void processInput(GLFWwindow *window);
@@ -37,6 +41,10 @@ const char *fragmentShader2Source = "#version 330 core\n"
 
 
 int main() {	
+
+	glm::mat4 trans = glm::mat4(1.0f);
+	trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
 
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -236,6 +244,9 @@ int main() {
 	ourShader.setInt("texture1", 0);
 	ourShader.setInt("texture2", 1);
 
+	GLuint transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
 	// render loop
 	while(!glfwWindowShouldClose(window)) {
 		// input
@@ -252,6 +263,8 @@ int main() {
 		GLfloat timeValue = glfwGetTime();
 		float mixValue = 0.5 + sin(2*timeValue) / 2.0f;
 		ourShader.setFloat("mixVal", mixValue*0.5);
+		trans = glm::rotate(trans, glm::radians(1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 		//ourShader.setFloat
 
