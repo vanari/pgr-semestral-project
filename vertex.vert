@@ -8,9 +8,14 @@
 
     uniform mat4 transform;
 
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+
     void main()
     {
-        gl_Position = transform * vec4(aPos, 1.0);
+        mat4 pvm = projection * view * model;
+        gl_Position = pvm * vec4(aPos, 1.0);
 		ourColor = aColor;
         TexCoord = aTexCoord;
     }
