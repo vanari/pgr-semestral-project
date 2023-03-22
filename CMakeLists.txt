@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(semestral-project C CXX)
 
-set(SOURCES main.cpp object.cpp shader.cpp stb_image.c)
+set(SOURCES main.cpp object.cpp shader.cpp stb_image.c buffer.cpp)
 set(EXE pgr-sem)
 set(SHARE /home/vanari/Documents/pgr/share)
 set(GLAD ${SHARE}/glad)
@@ -15,4 +15,5 @@ add_executable(${EXE} ${SOURCES} ${GLAD_SRC})
 
 target_link_libraries(${EXE}
 	glfw
+	assimp
 	)

@@ -5,6 +5,7 @@
 
 #include "object.h"
 #include "shader.h"
+#include "buffer.h"
 
 GLFWwindow* startWindow(GLuint width, GLuint height);
 
@@ -21,7 +22,13 @@ int main(int argc, char* argv[]) {
     // discard later !!!
 
     GLfloat triangle[] = {
-        0.f, .5f, 0.f,      0.5f, 2.0f,
+        0.f, .5f, 0.f,   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,  0.5f, 2.0f,
+        -.5f, -.5f, 0.f,  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,   0.f, 0.f,
+        .5f, -.5f, 0.f,    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,   1.f, 0.f
+    };
+    
+    GLfloat triangle2[] = {
+        0.f, -1.f, 0.f,      0.5f, 2.0f,
         -.5f, -.5f, 0.f,    0.f, 0.f,
         .5f, -.5f, 0.f,      1.f, 0.f
     };
@@ -58,10 +65,24 @@ int main(int argc, char* argv[]) {
 
     // DISCARD LATER !!!
 
+    float* buf;
+    buffer::loadNoEBO("mesh.obj", buf);
+
+    std::cout << "loaded buf size: " << sizeof(buf) << std::endl;
+
     shaderProgram shader("vertex.vert", "fragment.frag");
-    object triangleObj(triangle, sizeof(triangle), 9, shader);
+
+    object meshObj(buf, sizeof(float) * 9*11, 9, shader);
+    meshObj.loadTexture("assets/troll.png");
+
+    /*
+    object triangleObj(triangle, sizeof(triangle), 3, shader);
     triangleObj.loadTexture("assets/troll.png");
     
+    object triangle2Obj(triangle2, sizeof(triangle2), 3, shader);
+    triangle2Obj.loadTexture("assets/awesomeface.png");
+    */
+
     // Main loop
 
     while (!glfwWindowShouldClose(window)) {
@@ -70,13 +91,16 @@ int main(int argc, char* argv[]) {
         glClearColor(0.f, .3f, .3f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        triangleObj.draw();
+        //triangleObj.draw();
+        //triangle2Obj.draw();
+        meshObj.draw();
         renderLoop();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
+    
+    delete buf;
     glfwTerminate();
     return 0;
 }
