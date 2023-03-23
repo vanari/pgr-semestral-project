@@ -32,4 +32,5 @@ class camera {
     void setPos(glm::vec3 pos);
     void setDir(glm::vec3 dir);
     void setUpDir(glm::vec3 upDir);
+    void setRatio(float ratio);
 };

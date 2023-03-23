@@ -18,6 +18,9 @@ void processInput();
 
 void processInput(GLFWwindow* window);
 
+bool screenChanged = false;
+GLuint screenW = 640, screenH = 480;
+
 int main(int argc, char* argv[]) {
 
     // discard later !!!
@@ -35,8 +38,6 @@ int main(int argc, char* argv[]) {
     };
 
     // Init
-
-    GLuint screenW = 640, screenH = 480;
 
     if (argc >= 3) {
         screenW = atoi(argv[1]);
@@ -77,6 +78,7 @@ int main(int argc, char* argv[]) {
     auto pShader = &shader;
     
     camera cam = camera(1, &pShader);
+    cam.setRatio(static_cast<float>(screenW/screenH));
     cam.setPos(glm::vec3(0.0f,0.0f,5.0f));
 
     cam.updateShaders();
@@ -95,6 +97,12 @@ int main(int argc, char* argv[]) {
     // Main loop
 
     while (!glfwWindowShouldClose(window)) {
+
+        if (screenChanged) {
+            cam.setRatio(float(screenW)/float(screenH));
+            screenChanged = false;
+        }
+
         processInput(window);
 
         glClearColor(0.f, .3f, .3f, 1.f);
@@ -133,6 +141,10 @@ void processInput(GLFWwindow* window) {
 
 void framebufferSizeCallback(GLFWwindow* window, GLint width, GLint height) {
     glViewport(0, 0, width, height);
+    screenChanged = true;
+    screenW = static_cast<GLuint>(width);
+    screenH = static_cast<GLuint>(height);
+
 }
 
 GLFWwindow* startWindow(GLuint width, GLuint height) {

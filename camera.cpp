@@ -36,3 +36,7 @@ void camera::calculate() {
     viewMatrix = glm::lookAt(position, position + direction, upDirection);
     projectionMatrix = glm::perspective(fov, ratio, nearPlane, farPlane);
 }
+
+void camera::setRatio(float newRatio) {
+    ratio = newRatio;
+}
