@@ -1,16 +1,17 @@
 #include "object.h"
 
-object::object(GLfloat* vertices, size_t nAttribs, GLuint nVerts, shaderProgram& shaderProg) : nVertices(nVerts), shader(shaderProg) {
+object::object(GLfloat* vertices, GLuint* indices, size_t nAttribs, GLuint nVerts, shaderProgram& shaderProg) : nVertices(nVerts), shader(shaderProg) {
     std::cout << "Vertices loaded: " << nVertices << std::endl;
+
     glGenVertexArrays(1, &VAO);
-    //glBindVertexArray(VAO);
-
     glGenBuffers(1, &VBO);
-    //glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glGenBuffers(1, &EBO);
 
-    type = TEXTURED_COLORED;
-    
-    fillBuffers(nAttribs, vertices);
+    type = TEXTURED;
+
+    hasEBO = (indices==nullptr) ? false : true;
+
+    fillBuffers(nAttribs, vertices, indices);
     
     /*glBufferData(GL_ARRAY_BUFFER, nAttribs, vertices, GL_STATIC_DRAW);
 
@@ -23,10 +24,15 @@ object::object(GLfloat* vertices, size_t nAttribs, GLuint nVerts, shaderProgram&
 }
 
 
-bool object::fillBuffers(size_t nAttribs, GLfloat* buffer) {
+bool object::fillBuffers(size_t nAttribs, GLfloat* buffer, GLuint* indices) {
     if (type == UNDEFINED) {
         return false;
         std::cerr << "Error: undefined buffer type!" << std::endl;
+    }
+
+    if (hasEBO) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     }
 
     glBindVertexArray(VAO);
@@ -42,28 +48,36 @@ bool object::fillBuffers(size_t nAttribs, GLfloat* buffer) {
     glVertexAttribPointer(NORM_LOC, 3, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)(3*sizeof(GLfloat)));
     glEnableVertexAttribArray(NORM_LOC);
 
-    // color
-    glVertexAttribPointer(CLR_LOC, 3, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)(6*sizeof(GLfloat)));
-    glEnableVertexAttribArray(CLR_LOC);
-
-    // texture coords
-    glVertexAttribPointer(TEX_LOC, 2, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)(9*sizeof(GLfloat)));
-    glEnableVertexAttribArray(TEX_LOC);
-
-    /*
+    // redundant but readable
     switch (type) {
         
-        case (TEXTURED):
-        
-            glVertexAttribPointer(TEX_LOC, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+        case (TEXTURED): {
+            // texture coords
+            glVertexAttribPointer(TEX_LOC, 2, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)(6*sizeof(GLfloat)));
             glEnableVertexAttribArray(TEX_LOC);
+        } break;
 
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }*/
+        case (COLORED): {
+            // color
+            glVertexAttribPointer(CLR_LOC, 3, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)(6*sizeof(GLfloat)));
+            glEnableVertexAttribArray(CLR_LOC);
+        } break;
+
+        case (TEXTURED_COLORED): {
+            // color
+            glVertexAttribPointer(CLR_LOC, 3, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)(6*sizeof(GLfloat)));
+            glEnableVertexAttribArray(CLR_LOC);
+
+            // texture coords
+            glVertexAttribPointer(TEX_LOC, 2, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)(9*sizeof(GLfloat)));
+            glEnableVertexAttribArray(TEX_LOC);
+        } break;
+    }
     
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    if (hasEBO)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     return true;
 }
@@ -71,6 +85,13 @@ bool object::fillBuffers(size_t nAttribs, GLfloat* buffer) {
 void object::draw() {
 
     shader.use();
+
+    // garbage
+    /*glm::mat4 p = glm::mat4(1.0f);
+    glm::mat4 v = glm::mat4(1.0f);
+    shader.setUniform<glm::mat4>("projection",p);
+    shader.setUniform<glm::mat4>("view",v);*/
+
     glBindVertexArray(VAO);
     glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -118,8 +139,9 @@ void object::loadTexture(std::string name) {
 
     stbi_image_free(data);
 
+    // trash????
     shader.use();
-    shader.setUniform<int>("objTexture", int(0));
+    //shader.setUniform<int>("objTexture", int(0));
     glUseProgram(0);
 }
 

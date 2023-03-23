@@ -1,7 +1,10 @@
 #include "buffer.h"
 
-void buffer::loadNoEBO(const char* file, float* &data) {
+// works only for a triangulated mesh
+unsigned int buffer::load(const char* file, float* &data, unsigned int* &&indices, object::TYPE type) {
     Assimp::Importer importer;
+
+    indices = nullptr;
 
     const aiScene* scene = importer.ReadFile(file,
         aiProcess_Triangulate |
@@ -24,7 +27,7 @@ void buffer::loadNoEBO(const char* file, float* &data) {
 
     aiMesh* mesh = scene->mMeshes[0];
 
-    unsigned int meshSize = (mesh->mNumVertices)*(3*3+2);
+    unsigned int meshSize = (mesh->mNumVertices)*(type);
 
     std::cout << "Number of vertices in mesh: " << (mesh->mNumVertices) << std::endl;
 
@@ -33,33 +36,40 @@ void buffer::loadNoEBO(const char* file, float* &data) {
     data = new float[meshSize];
 
     for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+        unsigned k = 0;
+
         aiVector3t vertex = mesh->mVertices[i];
-        data[11*i] = vertex.x;
-        data[11*i+1] = vertex.y;
-        data[11*i+2] = vertex.z;
+        data[type*i+k++] = vertex.x;
+        data[type*i+k++] = vertex.y;
+        data[type*i+k++] = vertex.z;
 
 
         std::cout << "vertex done" << std::endl;
 
-        aiVector3t normal = mesh->mNormals[i];
-        data[11*i+3] = normal.x;
-        data[11*i+4] = normal.y;
-        data[11*i+5] = normal.z;
+        if (type != object::NONE) {
+            aiVector3t normal = mesh->mNormals[i];
+            data[type*i+k++] = normal.x;
+            data[type*i+k++] = normal.y;
+            data[type*i+k++] = normal.z;
+        }
         
         std::cout << "normal done" << std::endl;
 
-
-        //aiColor4t color = mesh->mColors[0][i];
-        data[11*i+6] = 1.0f;//color.r;
-        data[11*i+7] = 0.3f;//color.g;
-        data[11*i+8] = 0.0f;//color.b;
+        if (type == object::COLORED || type == object::TEXTURED_COLORED) {
+            aiColor4t color = mesh->mColors[0][i];
+            data[type*i+k++] = color.r;
+            data[type*i+k++] = color.g;
+            data[type*i+k++] = color.b;
+        }
         
         std::cout << "color done" << std::endl;
 
 
-        aiVector3t texCoords = mesh->mTextureCoords[0][i];
-        data[11*i+9] = texCoords.x;
-        data[11*i+10] = texCoords.y;
+        if (type == object::TEXTURED || type == object::TEXTURED_COLORED) {
+            aiVector3t texCoords = mesh->mTextureCoords[0][i];
+            data[type*i+k++] = texCoords.x;
+            data[type*i+k++] = texCoords.y;
+        }
         
         std::cout << "texture done" << std::endl;
 
@@ -67,5 +77,7 @@ void buffer::loadNoEBO(const char* file, float* &data) {
     }
     
     std::cout << "debug 2" << std::endl;
+
+    return mesh->mNumVertices;
 
 }

@@ -5,6 +5,8 @@
 #include "shader.h"
 #include "stb_image.h"
 
+#include <glm/glm.hpp>
+
 #define VERT_LOC 0
 #define NORM_LOC 1
 #define CLR_LOC  2
@@ -30,17 +32,18 @@ class object {
     private:
     bool hasEBO = false;
     TYPE type = NONE;
-    GLuint VBO, VAO;
+    GLuint VBO, VAO, EBO;
     GLuint nVertices;
     shaderProgram& shader;
     GLuint texture;
+    glm::vec3 defaultColor = glm::vec3(0.5f, 0.5f, 0.5f);
 
     void texParams();
-    bool fillBuffers(size_t nAttribs, GLfloat* buffer);
+    bool fillBuffers(size_t nAttribs, GLfloat* buffer, GLuint* indices);
 
     public:
-    object(GLfloat* vertices, size_t nAttribs, GLuint nVerts, shaderProgram& shaderProg);
+    object() = delete;
+    object(GLfloat* vertices, GLuint* indices, size_t nAttribs, GLuint nVerts, shaderProgram& shaderProg);
     void loadTexture(std::string name);
-    //object() = delete;
     void draw();
 };

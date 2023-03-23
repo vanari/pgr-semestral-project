@@ -6,6 +6,7 @@
 #include "object.h"
 #include "shader.h"
 #include "buffer.h"
+#include "camera.h"
 
 GLFWwindow* startWindow(GLuint width, GLuint height);
 
@@ -62,18 +63,26 @@ int main(int argc, char* argv[]) {
     // Setup
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glEnable(GL_DEPTH_TEST);
 
     // DISCARD LATER !!!
 
     float* buf;
-    buffer::loadNoEBO("mesh.obj", buf);
+    unsigned int nVertices = buffer::load("assets/lober.obj", buf, nullptr, object::TEXTURED);
 
-    std::cout << "loaded buf size: " << sizeof(buf) << std::endl;
+    //std::cout << "loaded buf size: " << sizeof(buf) << std::endl;
 
     shaderProgram shader("vertex.vert", "fragment.frag");
+    
+    auto pShader = &shader;
+    
+    camera cam = camera(1, &pShader);
+    cam.setPos(glm::vec3(0.0f,0.0f,5.0f));
 
-    object meshObj(buf, sizeof(float) * 9*11, 9, shader);
-    meshObj.loadTexture("assets/troll.png");
+    cam.updateShaders();
+
+    object meshObj(buf, nullptr, sizeof(float) * nVertices * object::TEXTURED, nVertices, shader);
+    meshObj.loadTexture("assets/lobster.png");
 
     /*
     object triangleObj(triangle, sizeof(triangle), 3, shader);
@@ -90,6 +99,14 @@ int main(int argc, char* argv[]) {
 
         glClearColor(0.f, .3f, .3f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        auto a = glfwGetTime();
+
+        float x = 5*cos(a);
+        float z = 5*sin(a);
+        cam.setPos(glm::vec3(x, 0.0f, z));
+        cam.setDir(-glm::vec3(x, 0.0f, z));
+        cam.updateShaders();
 
         //triangleObj.draw();
         //triangle2Obj.draw();
