@@ -1,10 +1,9 @@
 #include "buffer.h"
 
 // works only for a triangulated mesh
-unsigned int buffer::load(const char* file, float* &data, unsigned int* &&indices, object::TYPE type) {
+// NOT ANYMORE?
+void buffer::load(const char* file, unsigned *nData, float* &data, unsigned *nIndices, unsigned int* &indices, object::TYPE type) {
     Assimp::Importer importer;
-
-    indices = nullptr;
 
     const aiScene* scene = importer.ReadFile(file,
         aiProcess_Triangulate |
@@ -31,29 +30,27 @@ unsigned int buffer::load(const char* file, float* &data, unsigned int* &&indice
 
     std::cout << "Number of vertices in mesh: " << (mesh->mNumVertices) << std::endl;
 
-    std::cout << "debug 1" << std::endl;
-
     data = new float[meshSize];
 
     for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
         unsigned k = 0;
+
+        std::cout << "bundle " << i+1 << ':' << std::endl;
 
         aiVector3t vertex = mesh->mVertices[i];
         data[type*i+k++] = vertex.x;
         data[type*i+k++] = vertex.y;
         data[type*i+k++] = vertex.z;
 
-
-        std::cout << "vertex done" << std::endl;
+        std::cout << vertex.x << ' ' << vertex.y << ' ' << vertex.z << std::endl;
 
         if (type != object::NONE) {
             aiVector3t normal = mesh->mNormals[i];
             data[type*i+k++] = normal.x;
             data[type*i+k++] = normal.y;
             data[type*i+k++] = normal.z;
+            std::cout << normal.x << ' ' << normal.y << ' ' << normal.z << std::endl;
         }
-        
-        std::cout << "normal done" << std::endl;
 
         if (type == object::COLORED || type == object::TEXTURED_COLORED) {
             aiColor4t color = mesh->mColors[0][i];
@@ -62,22 +59,28 @@ unsigned int buffer::load(const char* file, float* &data, unsigned int* &&indice
             data[type*i+k++] = color.b;
         }
         
-        std::cout << "color done" << std::endl;
-
-
         if (type == object::TEXTURED || type == object::TEXTURED_COLORED) {
             aiVector3t texCoords = mesh->mTextureCoords[0][i];
             data[type*i+k++] = texCoords.x;
             data[type*i+k++] = texCoords.y;
+            std::cout << texCoords.x << ' ' << texCoords.y << ' ' << texCoords.z << std::endl;
         }
         
-        std::cout << "texture done" << std::endl;
-
-
     }
-    
-    std::cout << "debug 2" << std::endl;
 
-    return mesh->mNumVertices;
+    if (nIndices != nullptr) {
+        indices = new unsigned[3 * (mesh->mNumFaces)];
+
+        for (unsigned int i = 0; i < (mesh->mNumFaces); ++i) {
+            const aiFace& face = mesh->mFaces[i];
+            for (unsigned int j = 0; j < face.mNumIndices; ++j) {
+                indices[3*i + j] = face.mIndices[j];
+                std::cout << "index: " << face.mIndices[j]+1 << ' ' << i << std::endl;
+            }
+        }
+        *nIndices = 3 * (mesh->mNumFaces);
+    }
+
+    *nData = mesh->mNumVertices;
 
 }

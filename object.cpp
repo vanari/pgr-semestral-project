@@ -1,15 +1,19 @@
 #include "object.h"
 
-object::object(GLfloat* vertices, GLuint* indices, size_t nAttribs, GLuint nVerts, shaderProgram& shaderProg) : nVertices(nVerts), shader(shaderProg) {
+object::object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs, GLuint* indices, shaderProgram& shaderProg) : nIndices(nIndcs), nVertices(nVerts), shader(shaderProg) {
     std::cout << "Vertices loaded: " << nVertices << std::endl;
-
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
 
     type = TEXTURED;
 
     hasEBO = (indices==nullptr) ? false : true;
+
+    if (hasEBO)
+        std::cout << "EBO enabled!!!" << std::endl;
+
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    if (hasEBO)
+        glGenBuffers(1, &EBO);
 
     fillBuffers(nAttribs, vertices, indices);
     
@@ -23,22 +27,24 @@ object::object(GLfloat* vertices, GLuint* indices, size_t nAttribs, GLuint nVert
     */
 }
 
+object::object(GLuint nAttribs, GLfloat* vertices, GLuint nVerts, shaderProgram& shaderProg) : object(nAttribs, nVerts, vertices, 0, nullptr, shaderProg) {}
 
-bool object::fillBuffers(size_t nAttribs, GLfloat* buffer, GLuint* indices) {
+bool object::fillBuffers(GLuint nAttribs, GLfloat* buffer, GLuint* indices) {
     if (type == UNDEFINED) {
         return false;
         std::cerr << "Error: undefined buffer type!" << std::endl;
     }
 
+    glBindVertexArray(VAO);
+
     if (hasEBO) {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndices*sizeof(GLfloat), indices, GL_STATIC_DRAW);
     }
 
-    glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    glBufferData(GL_ARRAY_BUFFER, nAttribs, buffer, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, nAttribs*sizeof(GLfloat), buffer, GL_STATIC_DRAW);
 
     // vertices
     glVertexAttribPointer(VERT_LOC, 3, GL_FLOAT, GL_FALSE, type * sizeof(GLfloat), (void*)0);
@@ -74,10 +80,11 @@ bool object::fillBuffers(size_t nAttribs, GLfloat* buffer, GLuint* indices) {
         } break;
     }
     
+    
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     if (hasEBO)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);   
 
     return true;
 }
@@ -85,35 +92,26 @@ bool object::fillBuffers(size_t nAttribs, GLfloat* buffer, GLuint* indices) {
 void object::draw() {
 
     shader.use();
+    shader.setUniform<glm::mat4>("model", model);
 
-    // garbage
-    /*glm::mat4 p = glm::mat4(1.0f);
-    glm::mat4 v = glm::mat4(1.0f);
-    shader.setUniform<glm::mat4>("projection",p);
-    shader.setUniform<glm::mat4>("view",v);*/
-
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBindVertexArray(VAO);
+    
     glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawArrays(GL_TRIANGLES, 0, nVertices);
+    
+    if (!hasEBO)
+        glDrawArrays(GL_TRIANGLES, 0, nVertices);
+    else
+        glDrawElements(GL_TRIANGLES, nIndices, GL_UNSIGNED_INT, 0);
+
     glBindVertexArray(0);
-    glUseProgram(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    
+    shader.use(0);
 }
 
 void object::loadTexture(std::string name) {    
-    /*
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3*sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    */
     
     if (!(type == TEXTURED || type == TEXTURED_COLORED)) {
         std::cerr << "Error: object type does not support textures!" << std::endl;
@@ -140,9 +138,9 @@ void object::loadTexture(std::string name) {
     stbi_image_free(data);
 
     // trash????
-    shader.use();
+    //shader.use();
     //shader.setUniform<int>("objTexture", int(0));
-    glUseProgram(0);
+    //glUseProgram(0);
 }
 
 void object::texParams() {
@@ -150,4 +148,45 @@ void object::texParams() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void object::updateModel() {
+    glm::vec3 worldDir = glm::vec3(0.0f, 1.0f, 0.0f);
+    model = glm::mat4(1.0f);
+    glm::vec3 nDir = glm::normalize(direction);
+
+    if (glm::dot(worldDir, nDir) != 1.0f) {
+
+        glm::vec3 axis = glm::cross(glm::vec3(0.0f, 1.0f, 0.0f),nDir);
+        std::cout << "axis: " << axis.x << ' ' << axis.y << ' ' << axis.z << std::endl;
+        float cosAngle = glm::dot(nDir, glm::vec3(0.0f, 1.0f, 0.0f));
+        float angle = acos(cosAngle);
+        std::cout << "angle: " << angle << std::endl;
+        model = glm::rotate(model, angle, axis);
+
+    }
+
+    
+
+    model = glm::translate(model, position);
+}
+
+void object::setDir(glm::vec3 dir) {
+    direction = dir;
+    updateModel();
+}
+
+void object::rotateQ(glm::quat q) {
+
+}
+
+void object::rotateErel(float xDeg, float yDeg, float zDeg) {
+    model = glm::rotate(model, glm::radians(zDeg), glm::vec3(0.0f,0.0f,1.0f));
+    model = glm::rotate(model, glm::radians(yDeg), glm::vec3(0.0f,1.0f,0.0f));
+    model = glm::rotate(model, glm::radians(xDeg), glm::vec3(1.0f,0.0f,0.0f));
+}
+
+void object::rotateEabs(float xDeg, float yDeg, float zDeg) {
+    model = glm::mat4(1.0f);
+    rotateErel(xDeg, yDeg, zDeg);
 }

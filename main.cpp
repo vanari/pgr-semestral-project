@@ -65,26 +65,37 @@ int main(int argc, char* argv[]) {
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
 
     // DISCARD LATER !!!
 
     float* buf;
-    unsigned int nVertices = buffer::load("assets/lober.obj", buf, nullptr, object::TEXTURED);
+    unsigned int* indices;
+    unsigned int nVertices;
+    unsigned int nIndices;
+    buffer::load("assets/lober.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED);
 
-    //std::cout << "loaded buf size: " << sizeof(buf) << std::endl;
+    std::cout << "loaded buf size: " << nVertices << std::endl;
+    std::cout << "loaded indices: " << nIndices << std::endl;
 
     shaderProgram shader("vertex.vert", "fragment.frag");
     
     auto pShader = &shader;
     
     camera cam = camera(1, &pShader);
-    cam.setRatio(static_cast<float>(screenW/screenH));
+    cam.setRatio((float(screenW)/float(screenH)));
     cam.setPos(glm::vec3(0.0f,0.0f,5.0f));
+    cam.setDir(glm::vec3(0.0f,0.0f,-1.0f));
+    cam.calculate();
 
     cam.updateShaders();
 
-    object meshObj(buf, nullptr, sizeof(float) * nVertices * object::TEXTURED, nVertices, shader);
+    //object meshObj(sizeof(float) * nVertices * object::TEXTURED, buf, nVertices, shader);
+    object meshObj(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
     meshObj.loadTexture("assets/lobster.png");
+    //meshObj.setPos(glm::vec3(0.0f, 0.0f, 0.0f));
+    //meshObj.setDir(glm::vec3(0.0f, 0.0f, -1.0f));
+    //meshObj.updateModel();
 
     /*
     object triangleObj(triangle, sizeof(triangle), 3, shader);
@@ -100,6 +111,7 @@ int main(int argc, char* argv[]) {
 
         if (screenChanged) {
             cam.setRatio(float(screenW)/float(screenH));
+            cam.calculate();
             screenChanged = false;
         }
 
@@ -112,8 +124,12 @@ int main(int argc, char* argv[]) {
 
         float x = 5*cos(a);
         float z = 5*sin(a);
-        cam.setPos(glm::vec3(x, 0.0f, z));
-        cam.setDir(-glm::vec3(x, 0.0f, z));
+        meshObj.rotateEabs(85.0f,0.0f,0);
+
+        //meshObj.setDir(glm::vec3(x, 0.0f, z));
+
+        //cam.setPos(glm::vec3(x, 0.0f, z));
+        //cam.setDir(glm::vec3(-x, 0.0f, -z));
         cam.updateShaders();
 
         //triangleObj.draw();
@@ -153,7 +169,7 @@ GLFWwindow* startWindow(GLuint width, GLuint height) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(width, height, "Program", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL program", nullptr, nullptr);
 
 	glfwMakeContextCurrent(window);
 

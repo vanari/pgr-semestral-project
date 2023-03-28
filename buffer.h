@@ -10,5 +10,5 @@
 namespace buffer {
     
     // works only for a triangulated mesh
-    unsigned int load(const char* file, float* &data, unsigned int* &&indices, object::TYPE type);
+    void load(const char* file, unsigned* nData, float* &data, unsigned* nIndices, unsigned int* &indices, object::TYPE type);
 }

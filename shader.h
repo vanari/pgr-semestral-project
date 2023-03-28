@@ -15,6 +15,7 @@ class shaderProgram {
     public:
     shaderProgram(const char* vertexPath, const char* fragmentPath);
     void use();
+    void use(bool state);
 
     template <typename T>
     void setUniform(const std::string& name, T&& value) const {

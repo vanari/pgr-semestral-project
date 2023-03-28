@@ -17,11 +17,6 @@ void camera::updateShaders() {
     }
 }
 
-void camera::setPos(glm::vec3 pos) {
-    position = pos;
-    calculate();
-}
-
 void camera::setDir(glm::vec3 dir) {
     direction = dir;
     calculate();

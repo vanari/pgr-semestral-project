@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(semestral-project C CXX)
 
-set(SOURCES main.cpp object.cpp shader.cpp stb_image.c buffer.cpp camera.cpp)
+set(SOURCES main.cpp object.cpp shader.cpp stb_image.c buffer.cpp camera.cpp generalObject.cpp)
 set(EXE pgr-sem)
 set(SHARE /home/vanari/Documents/pgr/share)
 set(GLAD ${SHARE}/glad)

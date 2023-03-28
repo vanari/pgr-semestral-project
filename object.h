@@ -1,5 +1,7 @@
 #pragma once
 
+#include "generalObject.h"
+
 #include <glad/glad.h>
 #include <iostream>
 #include "shader.h"
@@ -12,7 +14,7 @@
 #define CLR_LOC  2
 #define TEX_LOC  3
 
-class object {
+class object : public generalObject{
     public:
     /*
         location 0: vertices        3f
@@ -32,18 +34,32 @@ class object {
     private:
     bool hasEBO = false;
     TYPE type = NONE;
-    GLuint VBO, VAO, EBO;
+    GLuint VBO, VAO, EBO = 0;
     GLuint nVertices;
+    GLuint nIndices;
     shaderProgram& shader;
     GLuint texture;
     glm::vec3 defaultColor = glm::vec3(0.5f, 0.5f, 0.5f);
+    glm::mat4 model = glm::mat4(1.0f);
+    GLfloat xAngle = 1.0f;
+    glm::vec3 xDirection = glm::vec3(1.0f, 0.0f, 0.0f);
 
     void texParams();
-    bool fillBuffers(size_t nAttribs, GLfloat* buffer, GLuint* indices);
+    bool fillBuffers(GLuint nAttribs, GLfloat* buffer, GLuint* indices);
 
     public:
     object() = delete;
-    object(GLfloat* vertices, GLuint* indices, size_t nAttribs, GLuint nVerts, shaderProgram& shaderProg);
+    object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs, GLuint* indices, shaderProgram& shaderProg);
+    object(GLuint nAttribs, GLfloat* vertices, GLuint nVerts, shaderProgram& shaderProg);
     void loadTexture(std::string name);
     void draw();
+    void updateModel();
+    void setPos(glm::vec3 pos) {
+        position = pos; //generalObject::setPos(pos);
+        updateModel();
+    };
+    void setDir(glm::vec3 dir);
+    void rotateQ(glm::quat quat);
+    void rotateErel(float xDeg, float yDeg, float zDeg);
+    void rotateEabs(float xDeg, float yDeg, float zDeg);
 };
