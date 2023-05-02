@@ -51,6 +51,7 @@ class object : public generalObject{
     object() = delete;
     object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs, GLuint* indices, shaderProgram& shaderProg);
     object(GLuint nAttribs, GLfloat* vertices, GLuint nVerts, shaderProgram& shaderProg);
+    bool refillBuffers(GLuint nAttribs, GLfloat* buffer);
     void loadTexture(std::string name);
     void draw();
     void updateModel();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <iostream>
 
 class generalObject {
     protected:
@@ -14,4 +15,7 @@ class generalObject {
     public:
     void setPos(glm::vec3 pos);
     void setDir(glm::vec3 dir);
+    void translate(glm::vec3 translationVector);
+    void log();
+    glm::vec3 getPos();
 };

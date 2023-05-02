@@ -29,6 +29,16 @@ object::object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs,
 
 object::object(GLuint nAttribs, GLfloat* vertices, GLuint nVerts, shaderProgram& shaderProg) : object(nAttribs, nVerts, vertices, 0, nullptr, shaderProg) {}
 
+bool object::refillBuffers(GLuint nAttribs, GLfloat* buffer) {
+    if (hasEBO) {
+        std::cout << "Invalid operation!" << std::endl;
+        return false;
+    }
+    std::cout << "refilling buffer" << std::endl;
+    char a;
+    return fillBuffers(nAttribs, buffer, nullptr);
+}
+
 bool object::fillBuffers(GLuint nAttribs, GLfloat* buffer, GLuint* indices) {
     if (type == UNDEFINED) {
         return false;
@@ -119,7 +129,7 @@ void object::loadTexture(std::string name) {
     }
 
     texParams();
-    stbi_set_flip_vertically_on_load(true);
+    //stbi_set_flip_vertically_on_load(true);
     GLint width, height, nrChannels;
 
     glGenTextures(1, &texture);
@@ -129,7 +139,7 @@ void object::loadTexture(std::string name) {
 	unsigned char *data = stbi_load(name.c_str(), &width, &height, &nrChannels, 0);
 
     if (data) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	} else {
 		std::cerr << "Failed to load texture" << std::endl;

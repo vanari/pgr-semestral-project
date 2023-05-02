@@ -7,6 +7,7 @@
 #include "shader.h"
 #include "buffer.h"
 #include "camera.h"
+#include "baseline.h"
 
 GLFWwindow* startWindow(GLuint width, GLuint height);
 
@@ -18,7 +19,39 @@ void processInput();
 
 void processInput(GLFWwindow* window);
 
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+
+glm::vec3 moveInDir();
+
 bool screenChanged = false;
+
+struct GameState {
+    GLuint screenH = 480, screenW = 640;
+
+    glm::vec3 direction;
+    glm::vec3 upDir = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    struct Motion {
+        glm::vec3 hustle;
+        double front;
+        double up;
+        double side;
+        double roll;
+    } motion;
+
+    double speed = 0;
+
+    struct Mouse {
+        bool used = false;
+        double x;
+        double y;
+        double deltaX;
+        double deltaY;
+    } mouse;
+} gameState;
+
 GLuint screenW = 640, screenH = 480;
 
 int main(int argc, char* argv[]) {
@@ -63,7 +96,10 @@ int main(int argc, char* argv[]) {
 
     // Setup
 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSetCursorPosCallback(window, mouseCallback);
     glEnable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
 
@@ -73,12 +109,14 @@ int main(int argc, char* argv[]) {
     unsigned int* indices;
     unsigned int nVertices;
     unsigned int nIndices;
-    buffer::load("assets/lober.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED);
+    //buffer::load("assets/A6M_ZERO.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED);
 
     std::cout << "loaded buf size: " << nVertices << std::endl;
     std::cout << "loaded indices: " << nIndices << std::endl;
 
     shaderProgram shader("vertex.vert", "fragment.frag");
+    shaderProgram shader2("hustleVertex.vert", "husleFrag.frag");
+    
     
     auto pShader = &shader;
     
@@ -90,22 +128,16 @@ int main(int argc, char* argv[]) {
 
     cam.updateShaders();
 
-    //object meshObj(sizeof(float) * nVertices * object::TEXTURED, buf, nVertices, shader);
-    object meshObj(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
-    meshObj.loadTexture("assets/lobster.png");
-    //meshObj.setPos(glm::vec3(0.0f, 0.0f, 0.0f));
-    //meshObj.setDir(glm::vec3(0.0f, 0.0f, -1.0f));
-    //meshObj.updateModel();
+    Baseline floor(shader);
 
-    /*
-    object triangleObj(triangle, sizeof(triangle), 3, shader);
-    triangleObj.loadTexture("assets/troll.png");
-    
-    object triangle2Obj(triangle2, sizeof(triangle2), 3, shader);
-    triangle2Obj.loadTexture("assets/awesomeface.png");
-    */
+    //object meshObj(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
+    //meshObj.loadTexture("assets/A6M_ZERO_D.tga");
+
+    gameState.speed = 5.0;
+    gameState.direction = glm::vec3(0.0f, 0.0f, -1.0f);
 
     // Main loop
+    std::cout << "Main loop" << std::endl;
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -124,17 +156,25 @@ int main(int argc, char* argv[]) {
 
         float x = 5*cos(a);
         float z = 5*sin(a);
-        meshObj.rotateEabs(85.0f,0.0f,0);
+        //meshObj.rotateEabs(85.0f,0.0f,0);
 
         //meshObj.setDir(glm::vec3(x, 0.0f, z));
 
         //cam.setPos(glm::vec3(x, 0.0f, z));
         //cam.setDir(glm::vec3(-x, 0.0f, -z));
+        cam.translate(moveInDir());
+        cam.setDir(gameState.direction);
+        cam.calculate();
         cam.updateShaders();
+        cam.log();
+
+        floor.setCenter(cam.getPos().x, cam.getPos().y);
+        //floor.fillBuffer();
 
         //triangleObj.draw();
         //triangle2Obj.draw();
-        meshObj.draw();
+        //meshObj.draw();
+        floor.draw();
         renderLoop();
 
         glfwSwapBuffers(window);
@@ -146,13 +186,84 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+glm::vec3 moveInDir() {
+    glm::vec3 side(0);
+    side = glm::cross(gameState.direction, gameState.upDir);
+    side = glm::normalize(side);
+    glm::vec3 translation = gameState.direction * float(gameState.motion.front) + side * float(gameState.motion.side) + gameState.upDir * float(gameState.motion.up);
+    gameState.motion.front = 0;
+    gameState.motion.side = 0;
+    gameState.motion.up = 0;
+    return translation;
+}
+
 void renderLoop() {
 
 }
 
+void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+    //std::cout << "x: " << xpos << " y: " << ypos << std::endl;
+    static double prevX = xpos;
+    static double prevY = ypos;
+    gameState.mouse.x = xpos;
+    gameState.mouse.y = ypos;
+
+    gameState.mouse.deltaX = xpos - prevX;
+    gameState.mouse.deltaY = ypos - prevY;
+
+    //std::cout << "dX: " << gameState.mouse.deltaX << std::endl;
+
+    prevX = xpos;
+    prevY = ypos;
+    
+    glm::vec3 side = glm::cross(gameState.direction, gameState.upDir);
+
+    glm::mat4 rot(1.0f);
+    rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaX*(-0.1f)), gameState.upDir);
+    rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaY*(-0.1f)), side);
+    auto bruh = rot * glm::vec4(gameState.direction, 1.0f);
+    gameState.direction = glm::vec3(bruh.x, bruh.y, bruh.z);
+}
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+
+}
+
 void processInput(GLFWwindow* window) {
+    static double prevTime = 0;
+    double deltaTime = glfwGetTime() - prevTime;
+    prevTime = glfwGetTime();
+
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        gameState.motion.hustle.z -= deltaTime * gameState.speed;
+        gameState.motion.front += deltaTime * gameState.speed;
+    }
+    
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        gameState.motion.hustle.z += deltaTime * gameState.speed;
+        gameState.motion.front -= deltaTime * gameState.speed;
+    }
+    
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        gameState.motion.hustle.x -= deltaTime * gameState.speed;
+        gameState.motion.side -= deltaTime * gameState.speed;   
+    }
+    
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        gameState.motion.hustle.x += deltaTime * gameState.speed;
+        gameState.motion.side += deltaTime * gameState.speed;   
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        gameState.motion.up += deltaTime * gameState.speed;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        gameState.motion.up -= deltaTime * gameState.speed;
+    }
 }
 
 void framebufferSizeCallback(GLFWwindow* window, GLint width, GLint height) {

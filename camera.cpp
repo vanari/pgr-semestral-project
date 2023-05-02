@@ -28,7 +28,10 @@ void camera::setUpDir(glm::vec3 upDir) {
 }
 
 void camera::calculate() {
+    glm::mat4 worldRotation = glm::mat4(1.0f);
+    worldRotation = glm::rotate(worldRotation, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
     viewMatrix = glm::lookAt(position, position + direction, upDirection);
+    viewMatrix = viewMatrix * worldRotation;
     projectionMatrix = glm::perspective(fov, ratio, nearPlane, farPlane);
 }
 
