@@ -28,10 +28,23 @@ void camera::setUpDir(glm::vec3 upDir) {
 }
 
 void camera::calculate() {
+    glm::vec3 realPos = glm::vec3(position.x, position.z, position.y);
+    glm::vec3 realUpDir = glm::vec3(upDirection.x, upDirection.z, upDirection.y);
+    glm::vec3 realDir = glm::vec3(direction.x, direction.z, direction.y);
+
     glm::mat4 worldRotation = glm::mat4(1.0f);
     worldRotation = glm::rotate(worldRotation, glm::radians(90.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
-    viewMatrix = glm::lookAt(position, position + direction, upDirection);
-    viewMatrix = viewMatrix * worldRotation;
+
+    glm::mat4 swapZYMatrix = glm::mat4(
+    1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 1.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f
+    );
+
+
+    viewMatrix = glm::lookAt(realPos, realPos + realDir, realUpDir);
+    viewMatrix = viewMatrix * swapZYMatrix;
     projectionMatrix = glm::perspective(fov, ratio, nearPlane, farPlane);
 }
 

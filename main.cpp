@@ -31,7 +31,7 @@ struct GameState {
     GLuint screenH = 480, screenW = 640;
 
     glm::vec3 direction;
-    glm::vec3 upDir = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 upDir = glm::vec3(0.0f, 0.0f, 1.0f);
 
     struct Motion {
         glm::vec3 hustle;
@@ -122,8 +122,9 @@ int main(int argc, char* argv[]) {
     
     camera cam = camera(1, &pShader);
     cam.setRatio((float(screenW)/float(screenH)));
-    cam.setPos(glm::vec3(0.0f,0.0f,5.0f));
-    cam.setDir(glm::vec3(0.0f,0.0f,-1.0f));
+    cam.setPos(glm::vec3(0.0f,0.0f,0.0f));
+    cam.setDir(glm::vec3(0.0f,1.0f,0.0f));
+    cam.setUpDir(gameState.upDir);
     cam.calculate();
 
     cam.updateShaders();
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]) {
     //meshObj.loadTexture("assets/A6M_ZERO_D.tga");
 
     gameState.speed = 5.0;
-    gameState.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    gameState.direction = glm::vec3(0.0f, 1.0f, 0.0f);
 
     // Main loop
     std::cout << "Main loop" << std::endl;
@@ -188,7 +189,7 @@ int main(int argc, char* argv[]) {
 
 glm::vec3 moveInDir() {
     glm::vec3 side(0);
-    side = glm::cross(gameState.direction, gameState.upDir);
+    side = glm::cross(gameState.upDir, gameState.direction);
     side = glm::normalize(side);
     glm::vec3 translation = gameState.direction * float(gameState.motion.front) + side * float(gameState.motion.side) + gameState.upDir * float(gameState.motion.up);
     gameState.motion.front = 0;
@@ -219,7 +220,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     glm::vec3 side = glm::cross(gameState.direction, gameState.upDir);
 
     glm::mat4 rot(1.0f);
-    rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaX*(-0.1f)), gameState.upDir);
+    rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaX*(0.1f)), gameState.upDir);
     rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaY*(-0.1f)), side);
     auto bruh = rot * glm::vec4(gameState.direction, 1.0f);
     gameState.direction = glm::vec3(bruh.x, bruh.y, bruh.z);
