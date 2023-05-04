@@ -8,6 +8,7 @@
 #include "buffer.h"
 #include "camera.h"
 #include "baseline.h"
+#include "terrain.h"
 
 GLFWwindow* startWindow(GLuint width, GLuint height);
 
@@ -26,6 +27,14 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 glm::vec3 moveInDir();
 
 bool screenChanged = false;
+
+enum CameraMode
+{
+    FREE_CAMERA,
+    RTS_CAMERA,
+    PLATFORM_CAMERA
+};
+
 
 struct GameState {
     GLuint screenH = 480, screenW = 640;
@@ -50,6 +59,10 @@ struct GameState {
         double deltaX;
         double deltaY;
     } mouse;
+
+    CameraMode camMode;
+    camera* enabledCamera;
+
 } gameState;
 
 GLuint screenW = 640, screenH = 480;
@@ -105,6 +118,11 @@ int main(int argc, char* argv[]) {
 
     // DISCARD LATER !!!
 
+    gameState.speed = 5.0;
+    gameState.direction = glm::vec3(0.0f, -0.70710678118f, -0.70710678118f);
+    gameState.camMode = FREE_CAMERA;
+
+
     float* buf;
     unsigned int* indices;
     unsigned int nVertices;
@@ -123,19 +141,38 @@ int main(int argc, char* argv[]) {
     camera cam = camera(1, &pShader);
     cam.setRatio((float(screenW)/float(screenH)));
     cam.setPos(glm::vec3(0.0f,0.0f,0.0f));
-    cam.setDir(glm::vec3(0.0f,1.0f,0.0f));
+    cam.setDir(gameState.direction);
     cam.setUpDir(gameState.upDir);
     cam.calculate();
 
     cam.updateShaders();
 
-    Baseline floor(shader);
+    camera platformCam = camera(1, &pShader);
+
+    platformCam.setRatio((float(screenW)/float(screenH)));
+    platformCam.setPos(glm::vec3(0.0f,0.0f,0.0f));
+    platformCam.setDir(gameState.direction);
+    platformCam.setUpDir(gameState.upDir);
+    platformCam.calculate();
+
+
+    camera RTSCam = camera(1, &pShader);
+
+    RTSCam.setRatio((float(screenW)/float(screenH)));
+    RTSCam.setPos(glm::vec3(0.0f, 0.0f, -1.0f));
+    RTSCam.setDir(gameState.direction);
+    RTSCam.setUpDir(gameState.upDir);
+    RTSCam.calculate();
+
+    gameState.enabledCamera = &RTSCam;
+
+
+    //Baseline floor(shader);
+    Terrain terrain(shader, "assets/4tiles.jpg");
 
     //object meshObj(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
     //meshObj.loadTexture("assets/A6M_ZERO_D.tga");
 
-    gameState.speed = 5.0;
-    gameState.direction = glm::vec3(0.0f, 1.0f, 0.0f);
 
     // Main loop
     std::cout << "Main loop" << std::endl;
@@ -163,19 +200,22 @@ int main(int argc, char* argv[]) {
 
         //cam.setPos(glm::vec3(x, 0.0f, z));
         //cam.setDir(glm::vec3(-x, 0.0f, -z));
-        cam.translate(moveInDir());
-        cam.setDir(gameState.direction);
-        cam.calculate();
-        cam.updateShaders();
-        cam.log();
+        gameState.enabledCamera->translate(moveInDir());
+        gameState.enabledCamera->setDir(gameState.direction);
+        gameState.enabledCamera->calculate();
+        gameState.enabledCamera->updateShaders();
+        //gameState.enabledCamera->log();
 
-        floor.setCenter(cam.getPos().x, cam.getPos().y);
+        terrain.setCenter(gameState.enabledCamera->getPos().x, gameState.enabledCamera->getPos().y);
+        //floor.setCenter(gameState.enabledCamera->getPos().x, gameState.enabledCamera->getPos().y);
         //floor.fillBuffer();
 
         //triangleObj.draw();
         //triangle2Obj.draw();
         //meshObj.draw();
-        floor.draw();
+        //floor.draw();
+
+        terrain.draw();
         renderLoop();
 
         glfwSwapBuffers(window);
@@ -221,7 +261,8 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
     glm::mat4 rot(1.0f);
     rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaX*(0.1f)), gameState.upDir);
-    rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaY*(-0.1f)), side);
+    if (gameState.camMode == FREE_CAMERA)
+        rot = glm::rotate(rot, glm::radians((float)gameState.mouse.deltaY*(-0.1f)), side);
     auto bruh = rot * glm::vec4(gameState.direction, 1.0f);
     gameState.direction = glm::vec3(bruh.x, bruh.y, bruh.z);
 }
