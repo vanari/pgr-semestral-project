@@ -31,6 +31,11 @@ class object : public generalObject{
         TEXTURED_COLORED = 11
     };
 
+    enum TEXTURE_TYPE {
+        RGB,
+        RGBA
+    };
+
     private:
     bool hasEBO = false;
     TYPE type = NONE;
@@ -43,6 +48,7 @@ class object : public generalObject{
     glm::mat4 model = glm::mat4(1.0f);
     GLfloat xAngle = 1.0f;
     glm::vec3 xDirection = glm::vec3(1.0f, 0.0f, 0.0f);
+    glm::vec3 scaleVector = glm::vec3(1.0f);
 
     void texParams();
     bool fillBuffers(GLuint nAttribs, GLfloat* buffer, GLuint* indices);
@@ -52,9 +58,10 @@ class object : public generalObject{
     object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs, GLuint* indices, shaderProgram& shaderProg);
     object(GLuint nAttribs, GLfloat* vertices, GLuint nVerts, shaderProgram& shaderProg);
     bool refillBuffers(GLuint nAttribs, GLfloat* buffer);
-    void loadTexture(std::string name);
+    void loadTexture(std::string name, TEXTURE_TYPE texType);
     void draw();
     void updateModel();
+    void scale(float x, float y, float z);
     void setPos(glm::vec3 pos) {
         position = pos; //generalObject::setPos(pos);
         updateModel();

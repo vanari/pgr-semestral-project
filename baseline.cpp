@@ -5,7 +5,7 @@ Baseline::Baseline(shaderProgram &shader) {
     vertexBuffer = new float[edgeSize * edgeSize * 6 * object::TEXTURED];    
     fillBuffer();
     baselineObj = new object(edgeSize * edgeSize * 6 * object::TEXTURED, vertexBuffer, edgeSize*edgeSize*6, shader);
-    baselineObj->loadTexture("assets/tile.jpg");
+    baselineObj->loadTexture("assets/tile.jpg", object::RGB);
 }
 
 Baseline::~Baseline() {

@@ -121,7 +121,7 @@ void object::draw() {
     shader.use(0);
 }
 
-void object::loadTexture(std::string name) {    
+void object::loadTexture(std::string name, TEXTURE_TYPE texType) {    
     
     if (!(type == TEXTURED || type == TEXTURED_COLORED)) {
         std::cerr << "Error: object type does not support textures!" << std::endl;
@@ -139,7 +139,12 @@ void object::loadTexture(std::string name) {
 	unsigned char *data = stbi_load(name.c_str(), &width, &height, &nrChannels, 0);
 
     if (data) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        if (texType == RGB)
+		    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+        if (texType == RGBA)
+		    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
 		glGenerateMipmap(GL_TEXTURE_2D);
 	} else {
 		std::cerr << "Failed to load texture" << std::endl;
@@ -160,8 +165,12 @@ void object::texParams() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
+void object::scale(float x, float y, float z) {
+    scaleVector = glm::vec3(x, y, z);
+}
+
 void object::updateModel() {
-    glm::vec3 worldDir = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 worldDir = glm::vec3(0.0f, 0.0f, 1.0f);
     model = glm::mat4(1.0f);
     glm::vec3 nDir = glm::normalize(direction);
 
@@ -176,9 +185,8 @@ void object::updateModel() {
 
     }
 
-    
-
     model = glm::translate(model, position);
+    model = glm::scale(model, scaleVector);
 }
 
 void object::setDir(glm::vec3 dir) {

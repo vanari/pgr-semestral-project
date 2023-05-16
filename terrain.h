@@ -8,7 +8,7 @@
 class Terrain {
     protected:
     int nOfVertices = 0;
-    int edgeSize = 25;
+    int edgeSize = 5;
     int xCenter = 0;
     int yCenter = 0;
     float zLvl = -2.0f;

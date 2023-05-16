@@ -12,7 +12,7 @@ Terrain::Terrain(shaderProgram& shader, const char* textureFile) {
     vertexBuffer = new float[nOfVertices * object::TEXTURED];    
     fillBuffer();
     terrainObject = new object(nOfVertices * object::TEXTURED, vertexBuffer, nOfVertices, shader);
-    terrainObject->loadTexture(textureFile);
+    terrainObject->loadTexture(textureFile, object::RGB);
 }
 
 void Terrain::fillBuffer() {

@@ -133,12 +133,18 @@ int main(int argc, char* argv[]) {
     std::cout << "loaded indices: " << nIndices << std::endl;
 
     shaderProgram shader("vertex.vert", "fragment.frag");
-    shaderProgram shader2("hustleVertex.vert", "husleFrag.frag");
+    shaderProgram skyBoxShader("skybox.vert", "fragment.frag");
+
+    buffer::load("assets/skybox.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED);
+    object skyBox(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, skyBoxShader);
+    skyBox.loadTexture("assets/skybox.png", object::RGBA);
+    skyBox.scale(57.f, 57.f, 57.f);
+    skyBox.updateModel();
     
+
+    shaderProgram* pShaders[] = {&skyBoxShader, &shader};
     
-    auto pShader = &shader;
-    
-    camera cam = camera(1, &pShader);
+    camera cam = camera(2, pShaders);
     cam.setRatio((float(screenW)/float(screenH)));
     cam.setPos(glm::vec3(0.0f,0.0f,0.0f));
     cam.setDir(gameState.direction);
@@ -147,7 +153,7 @@ int main(int argc, char* argv[]) {
 
     cam.updateShaders();
 
-    camera platformCam = camera(1, &pShader);
+    camera platformCam = camera(2, pShaders);
 
     platformCam.setRatio((float(screenW)/float(screenH)));
     platformCam.setPos(glm::vec3(0.0f,0.0f,0.0f));
@@ -156,7 +162,7 @@ int main(int argc, char* argv[]) {
     platformCam.calculate();
 
 
-    camera RTSCam = camera(1, &pShader);
+    camera RTSCam = camera(2, pShaders);
 
     RTSCam.setRatio((float(screenW)/float(screenH)));
     RTSCam.setPos(glm::vec3(0.0f, 0.0f, -1.0f));
@@ -168,11 +174,14 @@ int main(int argc, char* argv[]) {
 
 
     //Baseline floor(shader);
-    Terrain terrain(shader, "assets/4tiles.jpg");
+    Terrain terrain(shader, "assets/grassTiles.jpg");
 
     //object meshObj(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
     //meshObj.loadTexture("assets/A6M_ZERO_D.tga");
 
+    buffer::load("assets/v1-main.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED);
+    object v1(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, skyBoxShader);
+    v1.loadTexture("assets/V1-BASE.png", object::RGBA);
 
     // Main loop
     std::cout << "Main loop" << std::endl;
@@ -215,7 +224,12 @@ int main(int argc, char* argv[]) {
         //meshObj.draw();
         //floor.draw();
 
+        skyBox.setPos(gameState.enabledCamera->getPos());
+        skyBox.updateModel();
+
         terrain.draw();
+        skyBox.draw();
+        v1.draw();
         renderLoop();
 
         glfwSwapBuffers(window);
