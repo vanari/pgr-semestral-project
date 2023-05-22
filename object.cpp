@@ -16,6 +16,9 @@ object::object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs,
         glGenBuffers(1, &EBO);
 
     fillBuffers(nAttribs, vertices, indices);
+
+    direction = glm::vec3(0, 1.0f, 0.0f);
+    trackFwdDir = direction;
     
     /*glBufferData(GL_ARRAY_BUFFER, nAttribs, vertices, GL_STATIC_DRAW);
 
@@ -103,12 +106,23 @@ void object::draw() {
 
     shader.use();
     shader.setUniform<glm::mat4>("model", model);
+    shader.setUniform<GLfloat>("time", glfwGetTime());
+
+    int mtlIndex = 0;
+
+    shader.setUniform<glm::vec3>("ambientM", glm::vec3(material[mtlIndex++], material[mtlIndex++], material[mtlIndex++]));
+    shader.setUniform<glm::vec3>("diffuseM", glm::vec3(material[mtlIndex++], material[mtlIndex++], material[mtlIndex++]));
+    shader.setUniform<glm::vec3>("specularM", glm::vec3(material[mtlIndex++], material[mtlIndex++], material[mtlIndex++]));
+    shader.setUniform<GLfloat>("shininessM", material[mtlIndex++]);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBindVertexArray(VAO);
     
     glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+    
+    glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, textures[1]);
     
     if (!hasEBO)
         glDrawArrays(GL_TRIANGLES, 0, nVertices);
@@ -119,9 +133,13 @@ void object::draw() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     
     shader.use(0);
+    
+    for (object* kid : childObjects) {
+        kid->draw();
+    }
 }
 
-void object::loadTexture(std::string name, TEXTURE_TYPE texType) {    
+void object::loadTexture(std::string name, TEXTURE_TYPE texType, int texNo) {    
     
     if (!(type == TEXTURED || type == TEXTURED_COLORED)) {
         std::cerr << "Error: object type does not support textures!" << std::endl;
@@ -132,8 +150,8 @@ void object::loadTexture(std::string name, TEXTURE_TYPE texType) {
     //stbi_set_flip_vertically_on_load(true);
     GLint width, height, nrChannels;
 
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glGenTextures(1, &(textures[texNo]));
+    glBindTexture(GL_TEXTURE_2D, textures[texNo]);
 
 
 	unsigned char *data = stbi_load(name.c_str(), &width, &height, &nrChannels, 0);
@@ -152,6 +170,13 @@ void object::loadTexture(std::string name, TEXTURE_TYPE texType) {
 
     stbi_image_free(data);
 
+    shader.use();
+    if (texNo == 0)
+        shader.setUniform<int>("objTexture", 0);
+    if (texNo == 1)
+        shader.setUniform<int>("objTexture1", 1);
+    shader.use(0);
+
     // trash????
     //shader.use();
     //shader.setUniform<int>("objTexture", int(0));
@@ -161,24 +186,35 @@ void object::loadTexture(std::string name, TEXTURE_TYPE texType) {
 void object::texParams() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 void object::scale(float x, float y, float z) {
     scaleVector = glm::vec3(x, y, z);
+    
+    for (object* kid : childObjects) {
+        kid->scale(x, y, z);
+    }
+}
+
+void object::relUpdateModel() {
+
+    for (object* kid : childObjects) {
+        kid->relUpdateModel();
+    }
 }
 
 void object::updateModel() {
-    glm::vec3 worldDir = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 worldDir = glm::vec3(0.0f, 1.0f, 0.0f);
     model = glm::mat4(1.0f);
-    glm::vec3 nDir = glm::normalize(direction);
+    glm::vec3 nDir = glm::normalize(trackFwdDir);
 
     if (glm::dot(worldDir, nDir) != 1.0f) {
 
         glm::vec3 axis = glm::cross(glm::vec3(0.0f, 1.0f, 0.0f),nDir);
         std::cout << "axis: " << axis.x << ' ' << axis.y << ' ' << axis.z << std::endl;
-        float cosAngle = glm::dot(nDir, glm::vec3(0.0f, 1.0f, 0.0f));
+        float cosAngle = glm::dot(nDir, glm::vec3(0.0f, 0.0f, 1.0f));
         float angle = acos(cosAngle);
         std::cout << "angle: " << angle << std::endl;
         model = glm::rotate(model, angle, axis);
@@ -187,11 +223,20 @@ void object::updateModel() {
 
     model = glm::translate(model, position);
     model = glm::scale(model, scaleVector);
+
+    for (object* kid : childObjects) {
+        kid->updateModel();
+    }
 }
 
 void object::setDir(glm::vec3 dir) {
     direction = dir;
     updateModel();
+
+    for (object* kid : childObjects) {
+        kid->setDir(dir);
+        kid->updateModel();
+    }
 }
 
 void object::rotateQ(glm::quat q) {
@@ -202,9 +247,92 @@ void object::rotateErel(float xDeg, float yDeg, float zDeg) {
     model = glm::rotate(model, glm::radians(zDeg), glm::vec3(0.0f,0.0f,1.0f));
     model = glm::rotate(model, glm::radians(yDeg), glm::vec3(0.0f,1.0f,0.0f));
     model = glm::rotate(model, glm::radians(xDeg), glm::vec3(1.0f,0.0f,0.0f));
+    
+    for (object* kid : childObjects) {
+        kid->rotateErel(xDeg, yDeg, zDeg);
+    }
 }
 
 void object::rotateEabs(float xDeg, float yDeg, float zDeg) {
     model = glm::mat4(1.0f);
     rotateErel(xDeg, yDeg, zDeg);
+    
+    for (object* kid : childObjects) {
+        kid->rotateEabs(xDeg, yDeg, zDeg);
+    }
+}
+    
+void object::attachChild(object* kid) {
+    childObjects.push_back(kid);
+}
+    
+void object::setCustomAxis(float x, float y, float z) {
+    customAxis = glm::vec3(x,y,z);
+}
+
+void object::setCustomPos(float x, float y, float z) {
+    customPos = glm::vec3(x,y,z);
+}
+
+void object::customRotate(float deg) {
+    //model = glm::mat4(1.0f);
+    model = glm::translate(model, -customPos);
+    model = glm::rotate(model, glm::radians(deg), customAxis);
+    model = glm::translate(model, +customPos);
+}
+
+void object::pitch(float deg) {
+    auto pitchAxis = glm::cross(navUpDir, navFwdDir);
+    model = glm::rotate(model, glm::radians(deg), pitchAxis);
+
+    glm::mat4 rotMatrix(1.0f);
+    auto trackPitchAxis = glm::cross(trackUpDir, trackFwdDir);
+    rotMatrix = glm::rotate(rotMatrix, glm::radians(deg), trackPitchAxis);
+
+    trackUpDir = glm::vec3(rotMatrix * glm::vec4(trackUpDir, 1.0f));
+    trackFwdDir = glm::vec3(rotMatrix * glm::vec4(trackFwdDir, 1.0f));
+    
+
+    for (object* kid : childObjects) {
+        kid->model = model;//glm::rotate(model, deg, pitchAxis);
+    }
+    
+}
+
+void object::yaw(float deg) {
+    auto yawAxis = navUpDir;
+    model = glm::rotate(model, glm::radians(deg), yawAxis);
+    
+    glm::mat4 rotMatrix(1.0f);
+    rotMatrix = glm::rotate(rotMatrix, glm::radians(deg), trackUpDir);
+
+    trackFwdDir = glm::vec3(rotMatrix * glm::vec4(trackFwdDir, 1.0f));
+
+    for (object* kid : childObjects) {
+        kid->model = model;//glm::rotate(model, deg, pitchAxis);
+    }
+}
+
+void object::roll(float deg) {
+    auto rollAxis = navFwdDir;
+    model = glm::rotate(model, glm::radians(deg), rollAxis);
+    
+    glm::mat4 rotMatrix(1.0f);
+    rotMatrix = glm::rotate(rotMatrix, glm::radians(deg), trackFwdDir);
+
+    trackUpDir = glm::vec3(rotMatrix * glm::vec4(trackUpDir, 1.0f));
+
+    for (object* kid : childObjects) {
+        kid->model = model;//glm::rotate(model, deg, pitchAxis);
+    }
+}
+
+glm::vec3 object::getNavDir() {
+    return trackFwdDir;
+}
+
+void object::setMtl(float* mtls) {
+    for (int i = 0; i < 10; ++i) {
+        material[i] = mtls[i];
+    }
 }

@@ -9,7 +9,8 @@ void camera::updateShaders() {
         shaderProgram *shader = shaderList[i];
 
         shader->use();
-
+        
+        shader->setUniform<glm::vec3>("camPos", position);
         shader->setUniform<glm::mat4>("projection", projectionMatrix);
         shader->setUniform<glm::mat4>("view", viewMatrix);
 

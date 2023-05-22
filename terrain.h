@@ -4,11 +4,12 @@
 #include "object.h"
 #include <noise/noise.h>
 #include <random>
+#include <GLFW/glfw3.h>
 
 class Terrain {
     protected:
     int nOfVertices = 0;
-    int edgeSize = 5;
+    int edgeSize = 13;
     int xCenter = 0;
     int yCenter = 0;
     float zLvl = -2.0f;
@@ -41,6 +42,7 @@ class Terrain {
     float getTextureY(int x, int y);
 
     public:
+    float getZlvl(int x, int y) { return getTileLvl(x, y); };
     Terrain(shaderProgram &shader, const char* textureFile); 
     void setCenter(float x, float y, bool refill = true);
     void draw();

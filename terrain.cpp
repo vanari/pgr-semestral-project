@@ -12,7 +12,7 @@ Terrain::Terrain(shaderProgram& shader, const char* textureFile) {
     vertexBuffer = new float[nOfVertices * object::TEXTURED];    
     fillBuffer();
     terrainObject = new object(nOfVertices * object::TEXTURED, vertexBuffer, nOfVertices, shader);
-    terrainObject->loadTexture(textureFile, object::RGB);
+    terrainObject->loadTexture(textureFile, object::RGB, 0);
 }
 
 void Terrain::fillBuffer() {
@@ -207,7 +207,8 @@ float Terrain::getTextureX(int x, int y) {
         texVal = testMap[(x+mapSize/2) + (y+mapSize/2) * mapSize] << 4;
         texVal = texVal >> 4;
     } else {
-        texVal = static_cast<uint8_t>(16*textureGenerator.GetValue(static_cast<double>(x),static_cast<double>(y),0));
+        //texVal = 
+        texVal = static_cast<uint8_t>(2*(1.0 + textureGenerator.GetValue(static_cast<double>(x),static_cast<double>(y),0)));
     }
 
     return static_cast<float>(texVal % nTextureTiles)/static_cast<float>(nTextureTiles);
@@ -229,9 +230,10 @@ float Terrain::getTextureY(int x, int y) {
         texVal = testMap[(x+mapSize/2) + (y+mapSize/2) * mapSize] << 4;
         texVal = texVal >> 4;
     } else {
-        texVal = static_cast<uint8_t>(10*textureGenerator.GetValue(static_cast<double>(x),static_cast<double>(y),0));
-        std::cout << "texval " << int(texVal) << " " << x << std::endl;
+        texVal = static_cast<uint8_t>(2*(1.0 + textureGenerator.GetValue(static_cast<double>(x),static_cast<double>(y),0)));
+        //texVal = static_cast<uint8_t>(3*textureGenerator.GetValue(static_cast<double>(x),static_cast<double>(y),0));
+        //std::cout << "texval " << int(texVal) << " " << x << std::endl;
     }
 
-    return static_cast<float>(texVal/nTextureTiles)/static_cast<float>(nTextureTiles);
+    return static_cast<float>(texVal / nTextureTiles)/static_cast<float>(nTextureTiles);
 }

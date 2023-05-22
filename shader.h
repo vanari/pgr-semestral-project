@@ -56,5 +56,17 @@ class shaderProgram {
             throw std::runtime_error("Unsupported type");
         }
     }
+    
+    void setUniform1iv(const std::string& name, int* value, GLsizei vSize) const {
+            glUniform1iv(glGetUniformLocation(ID, name.c_str()), vSize, value);
+    }
+    
+    void setUniform1fv(const std::string& name, GLfloat* value, GLsizei vSize) const {
+            glUniform1fv(glGetUniformLocation(ID, name.c_str()), vSize, value);
+    }
 
+    void setUniform3fv(const std::string& name, glm::vec3* value, GLsizei vSize) const {
+            glUniform3fv(glGetUniformLocation(ID, name.c_str()), vSize, reinterpret_cast<GLfloat*>(value));
+    }
+    
 };
