@@ -27,6 +27,8 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 
 void toggleCamMode();
 
+void togglePCamMode();
+
 glm::vec3 moveInDir();
 
 bool screenChanged = false;
@@ -36,11 +38,20 @@ enum CameraMode
     FREE_CAMERA,
     RTS_CAMERA,
     PLATFORM_CAMERA,
-    PILOT
+    PILOT,
+    PASSENGER
 };
 
 
 struct GameState {
+    int passengerState = 0;
+
+    bool usedShrooms[256];
+
+    float fogDensity = 0.0f;
+
+    float transition = 1.0;
+
     GLuint screenH = 480, screenW = 640;
 
     glm::vec3 direction;
@@ -131,6 +142,15 @@ int main(int argc, char* argv[]) {
     glfwSetCursorPosCallback(window, mouseCallback);
     glEnable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+    //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+    for (int i = 0; i < 256; ++i)
+        gameState.usedShrooms[i] = false;
 
     // DISCARD LATER !!!
 
@@ -149,26 +169,30 @@ int main(int argc, char* argv[]) {
     std::cout << "loaded buf size: " << nVertices << std::endl;
     std::cout << "loaded indices: " << nIndices << std::endl;
 
-    shaderProgram shader("vertex.vert", "fragment.frag");
+    shaderProgram shader("phong.vert", "fragment.frag");
     shaderProgram red("vertex.vert", "red.frag");
     shaderProgram shaderOsc("osc.vert", "oscilating2.frag");
     shaderProgram skyBoxShader("skybox.vert", "fragment.frag");
     shaderProgram phongShader("phong.vert", "phong.frag");
+    shaderProgram slideShader("slide.vert", "phong.frag");
+    shaderProgram cursorShader("cursor.vert", "fragment.frag");
+    shaderProgram expS("expl.vert", "fragment.frag");
 
 
     buffer::load("assets/skybox.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
-    object skyBox(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, skyBoxShader);
+    object skyBox(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
     skyBox.loadTexture("assets/skybox.png", object::RGBA, 0);
     skyBox.scale(57.f, 57.f, 57.f);
     skyBox.updateModel();
     
 
-    shaderProgram* pShaders[] = {&skyBoxShader, &shader, &shaderOsc, &phongShader};
-    int nShaders = 4;
+    shaderProgram* pShaders[] = {&skyBoxShader, &shader, &cursorShader, &phongShader, &slideShader, &expS};
+    int nShaders = 6;
     
     lightManager::init(pShaders, nShaders);
     //lightManager::add(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     lightManager::add(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 0, 0), 15.0f);
+    lightManager::addDir(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
     camera cam = camera(nShaders, pShaders);
     cam.setRatio((float(screenW)/float(screenH)));
@@ -200,32 +224,57 @@ int main(int argc, char* argv[]) {
 
 
     //Baseline floor(shader);
-    Terrain terrain(shader, "assets/4tiles.jpg");
+    Terrain terrain(phongShader, "assets/4tiles.jpg");
+    terrain.pShroomShader = &phongShader;
 
     //object meshObj(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
     //meshObj.loadTexture("assets/A6M_ZERO_D.tga");
 
+    // CURSOR
+
+    buffer::load("assets/cursorHolder2.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, 0);
+    object cursor(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, cursorShader);
+    cursor.loadTexture("assets/cursor_2.png", object::RGBA, 0);
+    cursor.scale(0.02f, 0.02f, 0);
+    cursor.screenRatio = float(screenW)/float(screenH);
+    cursor.updateModel();
+
+    // exploze
+
+    buffer::load("assets/expl.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, 0);
+    object exp(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, expS);
+    exp.loadTexture("assets/exp.png", object::RGBA, 0);
+    //exp.scale(0.02f, 0.02f, 0);
+    exp.screenRatio = float(screenW)/float(screenH);
+    exp.updateModel();
+
+
     // V1 GETS LOADED
 
-    buffer::load("assets/v1-main.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
-    object v1(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shaderOsc);
+    buffer::load("assets/v1-main--m.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object v1(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
+    v1.setMtl(loadMtls);
     v1.loadTexture("assets/V1-BASE-FIRE.png", object::RGBA, 0);
     v1.loadTexture("assets/V1-BASE.png", object::RGBA, 1);
     
-    buffer::load("assets/tail-top.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
-    object v1_tail_top(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
+    buffer::load("assets/tail-top.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object v1_tail_top(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
+    v1_tail_top.setMtl(loadMtls);
     v1_tail_top.loadTexture("assets/V1-COMP.png", object::RGBA, 0);
 
-    buffer::load("assets/tail-L.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
-    object v1_tail_left(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
+    buffer::load("assets/tail-L.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object v1_tail_left(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
+    v1_tail_left.setMtl(loadMtls);
     v1_tail_left.loadTexture("assets/V1-COMP.png", object::RGBA, 0);
 
-    buffer::load("assets/tail-R.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
-    object v1_tail_right(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
+    buffer::load("assets/tail-R.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object v1_tail_right(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
+    v1_tail_right.setMtl(loadMtls);
     v1_tail_right.loadTexture("assets/V1-COMP.png", object::RGBA, 0);
     
-    buffer::load("assets/helix.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
-    object v1_helix(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
+    buffer::load("assets/helix.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object v1_helix(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
+    v1_helix.setMtl(loadMtls);
     v1_helix.loadTexture("assets/V1-COMP.png", object::RGBA, 0);
     
     v1.attachChild(&v1_tail_top);
@@ -248,12 +297,14 @@ int main(int argc, char* argv[]) {
 
     // --- mushy mushroom ---
 
-    buffer::load("assets/shroom_cluster1.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
-    object sc(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
+    buffer::load("assets/shroom_cluster1.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object sc(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
     sc.loadTexture("assets/shroom_color2.png", object::RGBA, 0);
+    sc.setMtl(loadMtls);
     sc.setPos(glm::vec3(0.0f,0.0f,10.0f));
     sc.scale(3.0f, 3.0f, 3.0f);
     sc.updateModel();
+    sc.setMtl(loadMtls);
  
 
     buffer::load("assets/shroom_cluster2.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
@@ -264,10 +315,24 @@ int main(int argc, char* argv[]) {
     sc2.updateModel();
     sc2.setMtl(loadMtls);
 
+    buffer::load("assets/valec.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object valec(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, slideShader);
+    valec.loadTexture("assets/valec.png", object::RGBA, 0);
+    valec.setPos(glm::vec3(5.0f,-25.0f,1.0f+terrain.getZlvl(5.0f, -25.f)));
+    //valec.scale(10.0f, 10.0f, 10.0f);
+    valec.updateModel();
+    valec.setMtl(loadMtls);
+
+
+
     lightManager::updateShaders();
 
     // Main loop
     std::cout << "Main loop" << std::endl;
+    glm::vec3 initPos;
+    glm::vec3 initDir;
+    float explodingTime = 0.0f;
+    float currentTime = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
 
@@ -280,9 +345,14 @@ int main(int argc, char* argv[]) {
         processInput(window);
 
         glClearColor(0.f, .3f, .3f, 1.f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearStencil(0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        auto a = glfwGetTime();
+        auto lastTime = currentTime;
+        currentTime = glfwGetTime();
+
+        float deltaTime = currentTime - lastTime;
+        float a = currentTime;
 
         float x = 5*cos(a);
         float z = 5*sin(a);
@@ -293,20 +363,53 @@ int main(int argc, char* argv[]) {
         //cam.setPos(glm::vec3(x, 0.0f, z));
         //cam.setDir(glm::vec3(-x, 0.0f, -z));
 
+        // EXPLOSION
+
+        if ((explodingTime > 0.0001f) || (v1.getPos().z < terrain.getZlvl(v1.getPos().x, v1.getPos().y))) {
+            static float explTime = glfwGetTime();
+            explodingTime = glfwGetTime() - explTime;
+            v1.setExplode(explodingTime);
+            v1_helix.setExplode(glfwGetTime() - explTime);
+            v1_tail_left.setExplode(glfwGetTime() - explTime);
+            v1_tail_right.setExplode(glfwGetTime() - explTime);
+            v1_tail_top.setExplode(glfwGetTime() - explTime);
+        }
+
+
+
+        // TRANSITION 
+
+        
         auto viewXY = glm::normalize(glm::vec3(v1.getNavDir().x, v1.getNavDir().y, 0.0f));
 
-        if (gameState.camMode == FREE_CAMERA)
+        if (gameState.camMode == FREE_CAMERA) {
             gameState.enabledCamera->translate(moveInDir());
-        if (gameState.camMode == PILOT)
-            gameState.enabledCamera->setPos(v1.getPos() + glm::vec3(0,0.0f,3.0f) - viewXY * 4.0f);
-        
-        if (gameState.camMode == FREE_CAMERA)
-            gameState.enabledCamera->setDir(gameState.direction);
-        if (gameState.camMode == PILOT)
-            gameState.enabledCamera->setDir(glm::normalize(glm::vec3(0,0.0f,-2.0f) + viewXY * 4.0f));
 
-        gameState.enabledCamera->calculate();
-        gameState.enabledCamera->updateShaders();
+        }
+        if (gameState.camMode == PILOT) {
+            glm::vec3 viewPos = v1.getPos() + glm::vec3(0,0.0f,3.0f) - viewXY * 4.0f;
+            if (gameState.transition <= 0.0025f)
+                initPos = gameState.enabledCamera->getPos();
+            if (gameState.transition < 1.0f)
+                gameState.enabledCamera->setPos(glm::mix(initPos, viewPos, gameState.transition));
+            else {
+                gameState.enabledCamera->setPos(viewPos);    
+            }
+        }
+        if (gameState.camMode == FREE_CAMERA) {
+            gameState.enabledCamera->setDir(gameState.direction);
+            initDir = gameState.direction;
+        }
+        if (gameState.camMode == PILOT) {
+            glm::vec3 playerDir = glm::normalize(glm::vec3(0,0.0f,-2.0f) + viewXY * 4.0f);
+            gameState.enabledCamera->setDir(glm::mix(initDir, playerDir, gameState.transition));
+            gameState.direction = playerDir;
+        }
+        
+        if (gameState.transition < 1.0f) {
+            gameState.transition += 0.0125f;
+        }
+
         //gameState.enabledCamera->log();
 
         terrain.setCenter(gameState.enabledCamera->getPos().x, gameState.enabledCamera->getPos().y);
@@ -327,6 +430,7 @@ int main(int argc, char* argv[]) {
             lightManager::updateShaders();
         }
 
+        if (gameState.transition >= 1.0f)
         if (gameState.camMode == PILOT) {
 
             //v1.rotateErel(0,0,(float)gameState.mouse.deltaX*(0.1f));
@@ -369,17 +473,100 @@ int main(int argc, char* argv[]) {
 
             v1.ttranslate(0.3f);
         }
+
+        // passenger mode
+
+        if (gameState.camMode == PASSENGER) {
+            float xPos, yPos;
+            float radius = 50.0f;
+            xPos = radius * cos(glfwGetTime());
+            yPos = radius * sin(glfwGetTime());
+            float xDir = -sin(glfwGetTime());
+            float yDir = cos(glfwGetTime());
+            v1.setPos(glm::vec3(xPos, yPos, 15.0f));
+            //v1.setCustomAxis(0,0, 1.0f);
+            v1.setCustomPos(0, 0, 15.0f);
+            //v1.customRotate(90 + glm::degrees(deltaTime));
+            float cosAngle = glm::dot(glm::vec2(xDir, yDir), glm::vec2(0, 1.0f));
+            //v1.rotateEabs(0,0, glm::degrees(360 - 2*glm::degrees(cosAngle)));
+            v1.updateModel();
+            v1.customRotate(glm::degrees(currentTime));
+            v1_tail_top.customRotate(-25);
+
+            gameState.direction = glm::vec3(xDir, yDir, -1.0f);
+
+            if (gameState.passengerState == 0) {
+                gameState.enabledCamera->setPos(glm::vec3(xPos - 5*xDir, yPos - 5*yDir, 20.0f));
+                gameState.enabledCamera->setDir(glm::vec3(xDir, yDir, -1));
+            }
+
+            if (gameState.passengerState == 1) {
+                gameState.enabledCamera->setPos(glm::vec3(0,0,1.0));
+                gameState.enabledCamera->setDir(glm::vec3(0,0,1.0));
+            }
+
+            if (gameState.passengerState == 2) {}
+        }
+
+
+        gameState.enabledCamera->calculate();
+        gameState.enabledCamera->updateShaders();
         
         gameState.motion.front = 0;
         gameState.motion.side = 0;
         gameState.motion.up = 0;
         gameState.motion.roll = 0;
 
-        terrain.draw();
+        phongShader.use();
+        phongShader.setUniform("baseFogDensity", gameState.fogDensity);
+        phongShader.use(0);
+
+        shader.use();
+        shader.setUniform("baseFogDensity", gameState.fogDensity);
+        shader.use(0);
+
+        expS.use();
+        expS.setUniform("explTime", explodingTime);
+        expS.use(0);
+
+        glDisable(GL_STENCIL_TEST);
+        //glDisable(GL_DEPTH_TEST);
+     
+        cursor.draw();
+        
+        //glEnable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
+
+        // SHROOMS
+
+        int sIdx = 20;
+
+        for (int x = -2; x <= 2; ++x) {
+            for (int y = -2; y <= 2; ++y) {
+                glStencilFunc(GL_ALWAYS, sIdx++, -1);
+                float xPos = 5.0f + 10.0f * float(x);
+                float yPos = 5.0f + 10.0f * float(y);
+                sc.setPos(glm::vec3(xPos, yPos, terrain.getZlvl(xPos, yPos)));
+                sc.updateModel();
+                if (gameState.usedShrooms[sIdx-1] == false) 
+                    sc.draw();
+            }
+        }
+
+
+        glStencilFunc(GL_ALWAYS, 1, -1);
         skyBox.draw();
-        v1.draw();
-        sc.draw();
-        sc2.draw();
+        glStencilFunc(GL_ALWAYS, 2, -1);
+        terrain.draw();
+        valec.draw();
+        glStencilFunc(GL_ALWAYS, 3, -1);
+        if (explodingTime < 1.0f)
+            v1.draw();
+        if (explodingTime < 5.0f && explodingTime > 0.0f)
+            exp.draw();
+        //sc.draw();
+        //sc2.draw();
+
         renderLoop();
 
         glfwSwapBuffers(window);
@@ -435,6 +622,8 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void processInput(GLFWwindow* window) {
     static bool I_is_pressed = false;
+    static bool M_is_pressed = false;
+    static bool O_is_pressed = false;
 
     gameState.keyStates.Q = false;
     gameState.keyStates.E = false;
@@ -447,9 +636,48 @@ void processInput(GLFWwindow* window) {
     double deltaTime = glfwGetTime() - prevTime;
     prevTime = glfwGetTime();
 
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)  {
+        GLuint index;    
+        if (M_is_pressed) {
+        } else {
+            M_is_pressed = true;
+            glReadPixels(screenW/2, screenH/2, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_INT, &index);
+            std::cout << "Stencil index: " << index << std::endl;
+
+            gameState.usedShrooms[index] = true;
+
+            if (index >= 20) {          
+                gameState.fogDensity += 0.005f;
+            }
+
+        };
+    } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_RELEASE) {
+        M_is_pressed = false;
+    }
+        
+    
+
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    
+    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        //gameState.enabledCamera->setPos(glm::vec3(0,0,0));
+        //gameState.enabledCamera->setDir(glm::vec3(0,0,1.0));
+        gameState.passengerState = 1;
+    }
 
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        if (O_is_pressed) {
+        } else {
+            O_is_pressed = true;
+            togglePCamMode();
+            //gameState.camMode = PASSENGER;    
+        };
+    } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_RELEASE) {
+        O_is_pressed = false;
+    }
+    
     if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_PRESS) {
         if (I_is_pressed) {
         } else {
@@ -524,9 +752,19 @@ GLFWwindow* startWindow(GLuint width, GLuint height) {
 }
 
 void toggleCamMode() {
+    gameState.transition = 0.0f;
     if (gameState.camMode == PILOT)
         gameState.camMode = FREE_CAMERA;
     else if (gameState.camMode == FREE_CAMERA) {
         gameState.camMode = PILOT;
+    }
+}
+
+void togglePCamMode() {
+    gameState.transition = 0.0f;
+    if (gameState.camMode == PASSENGER)
+        gameState.camMode = FREE_CAMERA;
+    else if (gameState.camMode == FREE_CAMERA) {
+        gameState.camMode = PASSENGER;
     }
 }

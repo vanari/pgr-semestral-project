@@ -28,7 +28,7 @@ void main(){
 
     fragNorm = mat3(transpose(inverse(model))) * aNorm.xyz;
 
-    texCoord = aTexCoord;
+    texCoord = aTexCoord + vec2(time, 0);
     
     vec3 myPos = aPos + explode * aNorm;
 

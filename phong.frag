@@ -4,7 +4,14 @@ const int MAX_LIGHTS = 16;
 
 out vec4 fragColor;
 
+uniform float time;
+
+uniform float baseFogDensity;
+
+uniform int osc;
+
 uniform sampler2D objTexture;
+uniform sampler2D objTexture1;
 
 in vec2 texCoord;
 
@@ -77,6 +84,28 @@ void main() {
         totalLight += coef * light_intensity[i] * (ambient * ambientM + diffuse + specular);
 
     }
+    
+    vec4 textureColor;
+    vec4 myColor1 = texture(objTexture, texCoord); 
+    
+    if (osc > 0) {
+        vec4 myColor2 = texture(objTexture1, texCoord);
+        textureColor = mix(myColor1, myColor2, .5 + .5*sin(20*time));
+    } else {
+        textureColor = myColor1;
+    }
 
-    fragColor = vec4(totalLight, 1.0) * texture(objTexture, texCoord);//vec4(1.0, 1.0, 1.0, 1.0);
+    // FOG
+
+    float dist = distance(fragPos, camPos);
+
+    float fogDensity = baseFogDensity * 0.5 * (1.0 + sin(5*time));
+    
+    float fogFactor = 1.0 - exp(-fogDensity * dist);
+
+    vec4 fogColor = mix(vec4(1.0, 0.0, 1.0, 1.0), vec4(1.0, 1.0, 0, 1.0), .5*(1.0 + sin(2*time)));
+
+    vec4 litColor = vec4(totalLight, 1.0) * textureColor;//vec4(1.0, 1.0, 1.0, 1.0);
+
+    fragColor = mix(litColor, fogColor, fogFactor);
 }

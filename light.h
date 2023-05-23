@@ -22,6 +22,7 @@ namespace lightManager {
 
     void init(shaderProgram** shaderArray, int shaderCount);
     void add(glm::vec3 pos, glm::vec3 clr);
+    void addDir(glm::vec3 dir, glm::vec3 clr);
     void add(glm::vec3 pos, glm::vec3 clr, glm::vec3 dir, float angle);
     void updateShaders();
     void setPos(int idx, glm::vec3 pos);

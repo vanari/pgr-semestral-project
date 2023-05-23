@@ -1,5 +1,6 @@
 # Blender 3.5.1
 # www.blender.org
+mtllib v1-main--m.mtl
 o helix
 v 0.062768 5.439861 0.209225
 v 0.062768 5.439861 -0.209225

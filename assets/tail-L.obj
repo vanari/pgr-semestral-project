@@ -1,5 +1,6 @@
 # Blender 3.5.1
 # www.blender.org
+mtllib v1-main--m.mtl
 o tail-left
 v -0.041845 -1.883029 0.041845
 v -1.255352 -1.883029 0.041845

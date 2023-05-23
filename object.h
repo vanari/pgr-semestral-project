@@ -18,6 +18,9 @@
 
 class object : public generalObject{
     public:
+
+    float screenRatio = 1.0f;
+
     /*
         location 0: vertices        3f
         location 1: normals         3f
@@ -39,6 +42,8 @@ class object : public generalObject{
     };
 
     private:
+    float explode = 0.0f;
+    bool osc = false;
     GLfloat material[3*3+1];
     bool hasEBO = false;
     TYPE type = NONE;
@@ -67,6 +72,7 @@ class object : public generalObject{
     bool fillBuffers(GLuint nAttribs, GLfloat* buffer, GLuint* indices);
 
     public:
+    void setExplode(float e) { explode = e;};
     void setCustomAxis(float x, float y, float z);
     void setCustomPos(float x, float y, float z);
     void customRotate(float deg);

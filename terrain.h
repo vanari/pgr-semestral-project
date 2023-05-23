@@ -5,11 +5,12 @@
 #include <noise/noise.h>
 #include <random>
 #include <GLFW/glfw3.h>
+#include "buffer.h"
 
 class Terrain {
     protected:
     int nOfVertices = 0;
-    int edgeSize = 13;
+    const static int edgeSize = 13;
     int xCenter = 0;
     int yCenter = 0;
     float zLvl = -2.0f;
@@ -17,6 +18,7 @@ class Terrain {
     float tileSize = 10.0f;
     float* vertexBuffer = nullptr;
     object* terrainObject = nullptr;
+    object* shrooms[50*50];
 
     noise::module::Perlin textureGenerator; 
 
@@ -40,9 +42,11 @@ class Terrain {
     float getTileLvl(int x, int y);
     float getTextureX(int x, int y);
     float getTextureY(int x, int y);
+    object* generateShroom(int x, int y);
 
     public:
-    float getZlvl(int x, int y) { return getTileLvl(x, y); };
+    shaderProgram* pShroomShader;
+    float getZlvl(float x, float y) { return zLvl + getTileLvl(static_cast<int>(x/tileSize - .5f), static_cast<int>(y/tileSize - .5f)); };
     Terrain(shaderProgram &shader, const char* textureFile); 
     void setCenter(float x, float y, bool refill = true);
     void draw();

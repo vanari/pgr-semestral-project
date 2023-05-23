@@ -48,6 +48,15 @@ void lightManager::add(glm::vec3 pos, glm::vec3 clr) {
     nLights++;
 }
 
+void lightManager::addDir(glm::vec3 dir, glm::vec3 clr) {
+    light_dir[nLights] = dir;
+    light_intensity[nLights] = 1.0f;
+    light_color[nLights] = clr;
+    light_type[nLights] = 2;
+
+    nLights++;
+}
+
 void lightManager::add(glm::vec3 pos, glm::vec3 clr, glm::vec3 dir, float angle) {
     light_pos[nLights] = pos;
     light_intensity[nLights] = 1.0f;

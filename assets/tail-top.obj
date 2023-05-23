@@ -1,5 +1,6 @@
 # Blender 3.5.1
 # www.blender.org
+mtllib v1-main--m.mtl
 o smer
 v 0.041967 -1.888536 1.133122
 v -0.041967 -1.888536 1.133122

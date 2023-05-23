@@ -106,7 +106,10 @@ void object::draw() {
 
     shader.use();
     shader.setUniform<glm::mat4>("model", model);
+    shader.setUniform<GLint>("osc", int(osc));
     shader.setUniform<GLfloat>("time", glfwGetTime());
+    shader.setUniform<GLfloat>("explode", explode);
+    shader.setUniform<GLfloat>("screenRatio", screenRatio);
 
     int mtlIndex = 0;
 
@@ -145,6 +148,9 @@ void object::loadTexture(std::string name, TEXTURE_TYPE texType, int texNo) {
         std::cerr << "Error: object type does not support textures!" << std::endl;
         return;
     }
+
+    if (texNo > 0)
+        osc = true;
 
     texParams();
     //stbi_set_flip_vertically_on_load(true);
@@ -276,9 +282,13 @@ void object::setCustomPos(float x, float y, float z) {
 
 void object::customRotate(float deg) {
     //model = glm::mat4(1.0f);
-    model = glm::translate(model, -customPos);
+    model = glm::translate(model, - customPos);
     model = glm::rotate(model, glm::radians(deg), customAxis);
-    model = glm::translate(model, +customPos);
+    model = glm::translate(model, + customPos);
+    
+    for (object* kid : childObjects) {
+        kid->model = model;//glm::rotate(model, deg, pitchAxis);
+    }
 }
 
 void object::pitch(float deg) {

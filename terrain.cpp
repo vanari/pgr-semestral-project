@@ -2,6 +2,8 @@
 
 Terrain::Terrain(shaderProgram& shader, const char* textureFile) {
 
+    pShroomShader = &shader;
+
     textureGenerator.SetSeed(seed);
     textureGenerator.SetFrequency(frequency);
 
@@ -13,6 +15,19 @@ Terrain::Terrain(shaderProgram& shader, const char* textureFile) {
     fillBuffer();
     terrainObject = new object(nOfVertices * object::TEXTURED, vertexBuffer, nOfVertices, shader);
     terrainObject->loadTexture(textureFile, object::RGB, 0);
+    float mtl[10] = { 0.8f, 0.8f, 0.8f, 
+                            0.8f, 0.8f, 0.8f,
+                            0.8f, 0.8f, 0.8f,
+                            10.0f };
+    terrainObject->setMtl(mtl);
+    
+    
+    /*int sIdx = 0;
+    for (int i = -20; i < 21; ++i) {
+        for (int j = -20; j < 21; ++j) {
+            shrooms[sIdx++] = generateShroom(i,j);
+        }
+    }*/
 }
 
 void Terrain::fillBuffer() {
@@ -40,9 +55,33 @@ void Terrain::fillBuffer() {
             generateDiagInterTile(i, j, q);
         }
     }
+    
 
     if (terrainObject != nullptr)
         terrainObject->refillBuffers(nOfVertices * object::TEXTURED, vertexBuffer);
+}
+    
+object* Terrain::generateShroom(int x, int y) {
+    
+    float* buf;
+    unsigned int* indices;
+    unsigned int nVertices;
+    unsigned int nIndices;
+    float loadMtls[10];
+
+    buffer::load("assets/shroom_cluster2.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    object* shroom = new object(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, *pShroomShader);
+    std::cout << "DAMN\n";
+    shroom->loadTexture("assets/shroom_color2.png", object::RGBA, 0);
+    shroom->setMtl(loadMtls);
+    shroom->scale(5.f, 5.f, 5.f);
+    std::cout << "x: " << x << " y: " << y << std::endl;
+    shroom->setPos(glm::vec3(float(x) * edgeSize, static_cast<float>(y)*edgeSize, zLvl + getTileLvl(x,y)));//float(x)*tileSize, float(y)*tileSize, getTileLvl(x, y)));
+    shroom->updateModel();
+    std::cout << "DAMN2\n";
+    
+    return shroom;
+
 }
 
 void Terrain::generateDiagInterTile(int x, int y, int& index) {
@@ -189,6 +228,14 @@ void Terrain::setCenter(float x, float y, bool refill) {
 
 void Terrain::draw() {
     terrainObject->draw();
+    
+    /*for (int i = xCenter - (edgeSize/2); i < xCenter + (edgeSize+1)/2 - 1; ++i) {
+        for (int j = yCenter - (edgeSize/2); j < yCenter + (edgeSize+1)/2 - 1; ++j) {
+            if (i >= -20 && i <= 20)
+                if (j >= -20 && j <= 20)
+                    shrooms[19*40 + 20]->draw();
+        }
+    }*/
 }
 
 float Terrain::getTextureX(int x, int y) {
