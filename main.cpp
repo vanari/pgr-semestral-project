@@ -1,3 +1,10 @@
+/*
+   File: main.cpp
+   Description: Semestral project for PGR using OpenGL.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include <iostream>
 
 #include <glad/glad.h>
@@ -42,6 +49,7 @@ enum CameraMode
     PASSENGER
 };
 
+// global struct to set the game state
 
 struct GameState {
     int passengerState = 0;
@@ -96,20 +104,6 @@ GLuint screenW = 640, screenH = 480;
 
 int main(int argc, char* argv[]) {
 
-    // discard later !!!
-
-    GLfloat triangle[] = {
-        0.f, .5f, 0.f,   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,  0.5f, 2.0f,
-        -.5f, -.5f, 0.f,  0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,   0.f, 0.f,
-        .5f, -.5f, 0.f,    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,   1.f, 0.f
-    };
-    
-    GLfloat triangle2[] = {
-        0.f, -1.f, 0.f,      0.5f, 2.0f,
-        -.5f, -.5f, 0.f,    0.f, 0.f,
-        .5f, -.5f, 0.f,      1.f, 0.f
-    };
-
     // Init
 
     if (argc >= 3) {
@@ -144,21 +138,18 @@ int main(int argc, char* argv[]) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
-    //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+    glBlendFunc(GL_ONE, GL_ONE);  
 
     for (int i = 0; i < 256; ++i)
         gameState.usedShrooms[i] = false;
 
-    // DISCARD LATER !!!
 
     gameState.speed = 5.0;
     gameState.direction = glm::vec3(0.0f, -0.70710678118f, -0.70710678118f);
     gameState.camMode = FREE_CAMERA;
 
 
+    // buffer pointers
     float* buf;
     unsigned int* indices;
     unsigned int nVertices;
@@ -169,6 +160,7 @@ int main(int argc, char* argv[]) {
     std::cout << "loaded buf size: " << nVertices << std::endl;
     std::cout << "loaded indices: " << nIndices << std::endl;
 
+    // shaders
     shaderProgram shader("phong.vert", "fragment.frag");
     shaderProgram red("vertex.vert", "red.frag");
     shaderProgram shaderOsc("osc.vert", "oscilating2.frag");
@@ -178,6 +170,7 @@ int main(int argc, char* argv[]) {
     shaderProgram cursorShader("cursor.vert", "fragment.frag");
     shaderProgram expS("expl.vert", "fragment.frag");
 
+    // skybox
 
     buffer::load("assets/skybox.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, nullptr);
     object skyBox(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
@@ -185,14 +178,20 @@ int main(int argc, char* argv[]) {
     skyBox.scale(57.f, 57.f, 57.f);
     skyBox.updateModel();
     
+    // shaders used
 
     shaderProgram* pShaders[] = {&skyBoxShader, &shader, &cursorShader, &phongShader, &slideShader, &expS};
     int nShaders = 6;
-    
+
+    // light setup
+
     lightManager::init(pShaders, nShaders);
     //lightManager::add(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     lightManager::add(glm::vec3(0.0f, 0.0f, 10.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 0, 0), 15.0f);
     lightManager::addDir(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    lightManager::add(glm::vec3(0.0f, 0.0f, -10.0f), glm::vec3(1.0f,0,0));
+
+    //camera setup
 
     camera cam = camera(nShaders, pShaders);
     cam.setRatio((float(screenW)/float(screenH)));
@@ -223,8 +222,9 @@ int main(int argc, char* argv[]) {
     gameState.enabledCamera = &RTSCam;
 
 
-    //Baseline floor(shader);
-    Terrain terrain(phongShader, "assets/4tiles.jpg");
+    //generated terrain 
+    
+    Terrain terrain(phongShader, "assets/grassTiles2.jpg");
     terrain.pShroomShader = &phongShader;
 
     //object meshObj(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, shader);
@@ -239,12 +239,11 @@ int main(int argc, char* argv[]) {
     cursor.screenRatio = float(screenW)/float(screenH);
     cursor.updateModel();
 
-    // exploze
+    // explosion
 
     buffer::load("assets/expl.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, 0);
     object exp(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, expS);
     exp.loadTexture("assets/exp.png", object::RGBA, 0);
-    //exp.scale(0.02f, 0.02f, 0);
     exp.screenRatio = float(screenW)/float(screenH);
     exp.updateModel();
 
@@ -295,7 +294,7 @@ int main(int argc, char* argv[]) {
     v1_helix.setCustomAxis(0, 1.0f, 0);
     v1_helix.setCustomPos(0,0,0);
 
-    // --- mushy mushroom ---
+    // --- mushrooms ---
 
     buffer::load("assets/shroom_cluster1.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
     object sc(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
@@ -307,10 +306,10 @@ int main(int argc, char* argv[]) {
     sc.setMtl(loadMtls);
  
 
-    buffer::load("assets/shroom_cluster2.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
+    buffer::load("assets/shroom_cluster1.obj", &nVertices, buf, &nIndices, indices, object::TEXTURED, loadMtls);
     object sc2(nVertices * object::TEXTURED, nVertices, buf, nIndices, indices, phongShader);
-    sc2.loadTexture("assets/shroom_color2.png", object::RGBA, 0);
-    sc2.setPos(glm::vec3(0.0f,0.0f,0.0f));
+    sc2.loadTexture("assets/shroom_color.png", object::RGBA, 0);
+    sc2.setPos(glm::vec3(25.0f, 30.0f,terrain.getZlvl(25.0f, 30.0f)));
     sc2.scale(10.0f, 10.0f, 10.0f);
     sc2.updateModel();
     sc2.setMtl(loadMtls);
@@ -322,7 +321,6 @@ int main(int argc, char* argv[]) {
     //valec.scale(10.0f, 10.0f, 10.0f);
     valec.updateModel();
     valec.setMtl(loadMtls);
-
 
 
     lightManager::updateShaders();
@@ -352,16 +350,6 @@ int main(int argc, char* argv[]) {
         currentTime = glfwGetTime();
 
         float deltaTime = currentTime - lastTime;
-        float a = currentTime;
-
-        float x = 5*cos(a);
-        float z = 5*sin(a);
-        //meshObj.rotateEabs(85.0f,0.0f,0);
-
-        //meshObj.setDir(glm::vec3(x, 0.0f, z));
-
-        //cam.setPos(glm::vec3(x, 0.0f, z));
-        //cam.setDir(glm::vec3(-x, 0.0f, -z));
 
         // EXPLOSION
 
@@ -410,16 +398,8 @@ int main(int argc, char* argv[]) {
             gameState.transition += 0.0125f;
         }
 
-        //gameState.enabledCamera->log();
 
         terrain.setCenter(gameState.enabledCamera->getPos().x, gameState.enabledCamera->getPos().y);
-        //floor.setCenter(gameState.enabledCamera->getPos().x, gameState.enabledCamera->getPos().y);
-        //floor.fillBuffer();
-
-        //triangleObj.draw();
-        //triangle2Obj.draw();
-        //meshObj.draw();
-        //floor.draw();
 
         skyBox.setPos(gameState.enabledCamera->getPos());
         skyBox.updateModel();
@@ -478,7 +458,7 @@ int main(int argc, char* argv[]) {
 
         if (gameState.camMode == PASSENGER) {
             float xPos, yPos;
-            float radius = 50.0f;
+            float radius = 15.0f;
             xPos = radius * cos(glfwGetTime());
             yPos = radius * sin(glfwGetTime());
             float xDir = -sin(glfwGetTime());
@@ -501,8 +481,8 @@ int main(int argc, char* argv[]) {
             }
 
             if (gameState.passengerState == 1) {
-                gameState.enabledCamera->setPos(glm::vec3(0,0,1.0));
-                gameState.enabledCamera->setDir(glm::vec3(0,0,1.0));
+                gameState.enabledCamera->setPos(glm::vec3(10.0f,0,20.0f));
+                gameState.enabledCamera->setDir(glm::vec3(-1.0f,0.0f,0.0f));
             }
 
             if (gameState.passengerState == 2) {}
@@ -562,10 +542,13 @@ int main(int argc, char* argv[]) {
         glStencilFunc(GL_ALWAYS, 3, -1);
         if (explodingTime < 1.0f)
             v1.draw();
+        
+        glEnable(GL_BLEND);
         if (explodingTime < 5.0f && explodingTime > 0.0f)
             exp.draw();
-        //sc.draw();
-        //sc2.draw();
+        glDisable(GL_BLEND);
+
+        sc2.draw();
 
         renderLoop();
 
@@ -578,6 +561,7 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+// calculates translation vector
 glm::vec3 moveInDir() {
     glm::vec3 side(0);
     side = glm::cross(gameState.upDir, gameState.direction);
@@ -590,6 +574,7 @@ glm::vec3 moveInDir() {
 void renderLoop() {
 
 }
+
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     //std::cout << "x: " << xpos << " y: " << ypos << std::endl;
@@ -620,6 +605,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 }
 
+// keyboard input processign
 void processInput(GLFWwindow* window) {
     static bool I_is_pressed = false;
     static bool M_is_pressed = false;
@@ -730,6 +716,8 @@ void processInput(GLFWwindow* window) {
     }
 }
 
+
+// if window gets resized
 void framebufferSizeCallback(GLFWwindow* window, GLint width, GLint height) {
     glViewport(0, 0, width, height);
     screenChanged = true;
@@ -738,6 +726,7 @@ void framebufferSizeCallback(GLFWwindow* window, GLint width, GLint height) {
 
 }
 
+// window initialization
 GLFWwindow* startWindow(GLuint width, GLuint height) {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -750,6 +739,7 @@ GLFWwindow* startWindow(GLuint width, GLuint height) {
 
     return window;
 }
+
 
 void toggleCamMode() {
     gameState.transition = 0.0f;

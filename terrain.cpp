@@ -1,3 +1,10 @@
+/*
+   File: terrain.cpp
+   Description: Terraing generation.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include "terrain.h"
 
 Terrain::Terrain(shaderProgram& shader, const char* textureFile) {
@@ -110,8 +117,8 @@ void Terrain::generateDiagInterTile(int x, int y, int& index) {
         vertexBuffer[index++] = 1.0f;
 
         //texture
-        vertexBuffer[index++] = getTextureX(x, y) + xOffset[vertex]/static_cast<float>(nTextureTiles);
-        vertexBuffer[index++] = getTextureY(x, y) + yOffset[vertex]/static_cast<float>(nTextureTiles);
+        vertexBuffer[index++] = getTextureX(x, y) + 0.25f*xOffset[vertex]/static_cast<float>(nTextureTiles);
+        vertexBuffer[index++] = getTextureY(x, y) + 0.25f*yOffset[vertex]/static_cast<float>(nTextureTiles);
     }
 }
 
@@ -138,7 +145,7 @@ void Terrain::generateYInterTile(int x, int y, int& index) {
 
         //texture
         vertexBuffer[index++] = getTextureX(x, y) + xOffset[vertex]/static_cast<float>(nTextureTiles);
-        vertexBuffer[index++] = getTextureY(x, y) + yOffset[vertex]/static_cast<float>(nTextureTiles);
+        vertexBuffer[index++] = getTextureY(x, y) + .25f*yOffset[vertex]/static_cast<float>(nTextureTiles);
     }
 }
 
@@ -164,7 +171,7 @@ void Terrain::generateXInterTile(int x, int y, int& index) {
         vertexBuffer[index++] = 1.0f;
 
         //texture
-        vertexBuffer[index++] = getTextureX(x, y) + xOffset[vertex]/static_cast<float>(nTextureTiles);
+        vertexBuffer[index++] = getTextureX(x, y) + 0.25f*xOffset[vertex]/static_cast<float>(nTextureTiles);
         vertexBuffer[index++] = getTextureY(x, y) + yOffset[vertex]/static_cast<float>(nTextureTiles);
     }
 }

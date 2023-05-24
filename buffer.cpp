@@ -1,3 +1,10 @@
+/*
+   File: buffer.cpp
+   Description: Handles loading objects from files.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include "buffer.h"
 
 // works only for a triangulated mesh

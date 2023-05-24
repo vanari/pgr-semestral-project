@@ -1,3 +1,10 @@
+/*
+   File: shader.h
+   Description: Object for handling shaders.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #pragma once
 
 #include <glad/glad.h>
@@ -13,9 +20,12 @@ class shaderProgram {
     GLuint ID;
 
     public:
+
     shaderProgram(const char* vertexPath, const char* fragmentPath);
     void use();
     void use(bool state);
+
+    // uniform setters
 
     template <typename T>
     void setUniform(const std::string& name, T&& value) const {

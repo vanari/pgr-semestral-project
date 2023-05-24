@@ -1,3 +1,10 @@
+/*
+   File: camera.h
+   Description: Camera object.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #pragma once
 
 #include "generalObject.h"
@@ -25,11 +32,19 @@ class camera : public generalObject {
 
     public:
     camera(unsigned int numShaders, shaderProgram** sList);
+
+    // sets projection and view matrices in uniform
     void updateShaders();
-    void setProjectionMatrix();
-    void setViewMatrix();
+
+
     void setDir(glm::vec3 dir);
+
+    // sets the direction that is considerede Up in the camera view
     void setUpDir(glm::vec3 upDir);
+
+    // sets screen ration (width/height)
     void setRatio(float ratio);
+
+    // updates the projection and view matrices.
     void calculate();
 };

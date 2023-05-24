@@ -1,3 +1,10 @@
+/*
+   File: generalObject.cpp
+   Description: Base for other objects in 3D space.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include "generalObject.h"
 
 void generalObject::setPos(glm::vec3 pos) {

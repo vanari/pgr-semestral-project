@@ -1,3 +1,10 @@
+/*
+   File: generalObject.h
+   Description: Base for other objects in 3D space.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #pragma once
 
 #include <glm/glm.hpp>
@@ -16,6 +23,9 @@ class generalObject {
     void setPos(glm::vec3 pos);
     void setDir(glm::vec3 dir);
     void translate(glm::vec3 translationVector);
+
+    // outputs objects position
     void log();
+
     glm::vec3 getPos();
 };

@@ -1,3 +1,10 @@
+/*
+   File: object.h
+   Description: Objects in 3D space.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #pragma once
 
 #include "generalObject.h"
@@ -28,6 +35,8 @@ class object : public generalObject{
         location 3: teture coords   2f
 
     */
+
+    // Enumeration for object types
     enum TYPE {
         UNDEFINED = 0,
         NONE = 3,
@@ -36,6 +45,7 @@ class object : public generalObject{
         TEXTURED_COLORED = 11
     };
 
+    // Enumeration for texture types
     enum TEXTURE_TYPE {
         RGB,
         RGBA
@@ -72,24 +82,51 @@ class object : public generalObject{
     bool fillBuffers(GLuint nAttribs, GLfloat* buffer, GLuint* indices);
 
     public:
+
+    // Setter for the 'explode' variable
     void setExplode(float e) { explode = e;};
+
+    // Setter for custom axis of rotation
     void setCustomAxis(float x, float y, float z);
+
+    // Setter for position of the custom axis of rotation 
     void setCustomPos(float x, float y, float z);
+
+    // roate around the custom axis
     void customRotate(float deg);
+
+    // Attach a child object to the current object
     void attachChild(object* kid);
+
+    // constructors
     object() = delete;
     object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs, GLuint* indices, shaderProgram& shaderProg);
     object(GLuint nAttribs, GLfloat* vertices, GLuint nVerts, shaderProgram& shaderProg);
+
+    // Refill the vertex buffer with new data
     bool refillBuffers(GLuint nAttribs, GLfloat* buffer);
+
+    // loads and sets texture for object
     void loadTexture(std::string name, TEXTURE_TYPE texType, int texNo);
+
+
     void draw();
+
+    // update model setting model matrice to eye
     void updateModel();
+    
+    // update model using previous model matrix
     void relUpdateModel();
+    
+    
+
     void scale(float x, float y, float z);
     void setPos(glm::vec3 pos) {
-        position = pos; //generalObject::setPos(pos);
+        position = pos;
         relUpdateModel();
     };
+
+    //translate object in own direction
     void ttranslate(float delta) {
         model = glm::translate(model, delta * glm::vec3(0, 1.0f, 0));
         translate(trackFwdDir * delta);
@@ -98,13 +135,28 @@ class object : public generalObject{
             kid->ttranslate(delta);
         }
     };
+
+
     void setDir(glm::vec3 dir);
+
+    // quaternion rotation
     void rotateQ(glm::quat quat);
+
+    // rotate relative
     void rotateErel(float xDeg, float yDeg, float zDeg);
+
+    // rotate absolute
     void rotateEabs(float xDeg, float yDeg, float zDeg);
+    
+    // get object direction    
     glm::vec3 getNavDir();
+
+
+    // rotation
     void pitch(float deg);
     void yaw(float deg);
     void roll(float deg);
+
+    // set material properties
     void setMtl(float* mtls);
 };

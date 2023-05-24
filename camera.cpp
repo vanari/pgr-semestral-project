@@ -1,3 +1,10 @@
+/*
+   File: camera.cpp
+   Description: Camera object.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include "camera.h"
 
 camera::camera(unsigned int numShaders, shaderProgram** sList) : nShaders(numShaders), shaderList(sList) {

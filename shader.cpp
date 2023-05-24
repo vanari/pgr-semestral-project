@@ -1,3 +1,10 @@
+/*
+   File: shader.cpp
+   Description: Object for handling shaders.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include "shader.h"
 
 shaderProgram::shaderProgram(const char* vertexPath, const char* fragmentPath) {

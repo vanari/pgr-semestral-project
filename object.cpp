@@ -1,3 +1,10 @@
+/*
+   File: object.cpp
+   Description: Objects in 3D space.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include "object.h"
 
 object::object(GLuint nAttribs, GLuint nVerts, GLfloat* vertices, GLuint nIndcs, GLuint* indices, shaderProgram& shaderProg) : nIndices(nIndcs), nVertices(nVerts), shader(shaderProg) {

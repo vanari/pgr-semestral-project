@@ -1,3 +1,10 @@
+/*
+   File: light.cpp
+   Description: Light objects.
+   Author: Richard Váňa
+   Date: May 23, 2023
+*/
+
 #include "light.h"
 
 
